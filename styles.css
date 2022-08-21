@@ -1,0 +1,35 @@
+.block_edmodo_iframepreview {border: 0;}
+
+table.edmodo_form_table{
+    border: 1px solid black;
+    table-layout: fixed;
+    width: 500px;
+}
+/*
+td.edmodo_ID_col_0{
+	text-align: center;
+}
+td.edmodo_ID_col_1{
+	text-align: right;
+}
+td.edmodo_ID_col_2{
+	text-align: left;
+}
+*/
+
+td.edmodo_form_cell{
+	border: 1px solid black;
+}
+
+th.edmodo_form_cell{
+	border: 1px solid black;
+	text-align: center;
+}
+
+input[type="button"].block_edmodo_previewbutton {
+   float: left;
+}
+
+.badmessage {
+    color: red;
+}
