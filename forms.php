@@ -107,11 +107,12 @@ class block_edmodo_export_form extends block_edmodo_qq_form  {
     public function definition() {
         global $CFG, $USER, $OUTPUT, $PAGE,$COURSE;
         $strrequired = get_string('required');
-        $mform = & $this->_form;  
-        $exporttype= $this->_customdata['exporttype'];
+        $mform = & $this->_form;
+        $exporttype = $this->_customdata['exporttype'];
         $qsets = $this->_customdata['qsets'];
 		$sections = $this->_customdata['sections'];
-        
+        $courseid = $this->_customdata['courseid'];
+
         //add a little explanation
          $mform->addElement('static','qq_selectexplanation','',get_string('selectinstructions','block_edmodo'));
         
@@ -122,6 +123,7 @@ class block_edmodo_export_form extends block_edmodo_qq_form  {
        //$mform->setType('selectedsets', PARAM_TEXT);
        $selectedsets->setMultiple(true);
       //$previewlink = html_writer::link('',get_string('previewset','block_edmodo'),array('onclick'=>''));
+        /*
        $previewbutton = html_writer::tag('input',null,
                 array('type'=>'button',
                     'value'=>get_string('previewset','block_edmodo'),
@@ -129,26 +131,15 @@ class block_edmodo_export_form extends block_edmodo_qq_form  {
                     'name'=>'selectsetsubmit',
                     'onClick'=>'M.block_edmodo.iframehelper.update(\'' . BLOCK_QUIZLET_QQ_SELECTSET . '\')'));
        $mform->addElement('static','qq_preview_button','',$previewbutton);
-       
+       */
+
         //show preview iframe inform
+        /*
        $renderer = $PAGE->get_renderer('block_edmodo');
        $previewiframe = $renderer->display_preview_iframe(BLOCK_QUIZLET_IFRAME_NAME);
        $mform->addElement('static','dd_preview_iframe','',$previewiframe);
-       
+       */
 
-       //activity types
-        $attributes = array();
-        $act_array=array();
-        $activities = array('flashcards' => get_string('acttype_flashcards', 'block_edmodo'),
-				'scatter'=>get_string('acttype_scatter', 'block_edmodo'),
-				'spacerace'=>get_string('acttype_spacerace', 'block_edmodo'),
-				'test'=>get_string('acttype_test', 'block_edmodo'),
-				'speller'=>get_string('acttype_speller', 'block_edmodo'),
-				'learn'=>get_string('acttype_learn', 'block_edmodo'));
-        foreach ($activities as $aid=>$atitle){
-                 $act_array[] =& $mform->createElement('advcheckbox', $aid,'',$atitle,array('group'=>1),array(0, $aid));
-        }	
-        $act_arraytable = $this->tablify($act_array,1, 'act_table',false);
     
       
          //multichoice questions
@@ -177,44 +168,22 @@ class block_edmodo_export_form extends block_edmodo_qq_form  {
         $matching_arraytable = $this->tablify($matching_array,1, 'matching_table',false);
 
 
-        switch($exporttype){
-            case 'qq':
-            case 'qq_direct':
-                $mform->addElement('static','qq_qchoiceexplanation','',get_string('qchoiceinstructions','block_edmodo'));
-                $mform->addGroup($sa_arraytable, 'shortanswer_group',get_string('shortanswer','block_edmodo'), array(' '), false);
-                $mform->addGroup($mc_arraytable, 'multichoice_group',get_string('multichoice','block_edmodo'), array(' '), false);
-                $mform->addGroup($matching_arraytable, 'matching_group',get_string('matching','block_edmodo'), array(' '), false);
-                
-                $answerside_array=array('0'=>get_string('termasanswer','block_edmodo'),'1'=>get_string('definitionasanswer','block_edmodo'));
-                
-                //add a little explanation
-                $mform->addElement('static','answersideinstructions',get_string('answerside','block_edmodo'),get_string('answersideinstructions','block_edmodo'));
-                $mform->addElement('select','answerside','',$answerside_array);
-        
-                        
-                
-                break;
-            case 'dd':
-            case 'dd_direct':
-               //add a little explanation
-                $mform->addElement('static','qq_actchoiceexplanation','',get_string('actchoiceinstructions','block_edmodo'));
-                $mform->addGroup($act_arraytable, 'activitytype_group', get_string('activitytypes','block_edmodo'), array(' '), false);
-           }
-		   
-		//Course Sections   
-        if($exporttype=='dd_direct'){
-			 //Get a list of course sections, explain the deal first
-			$mform->addElement('static','qq_sectionchoiceexplanation','',get_string('sectionchoiceinstructions','block_edmodo'));
-			
-			$mform->addElement('select', 'section', 
-                get_string('coursesection','block_edmodo'),$sections);
-		}
-		
+        $mform->addElement('static','qq_qchoiceexplanation','',get_string('qchoiceinstructions','block_edmodo'));
+        $mform->addGroup($sa_arraytable, 'shortanswer_group',get_string('shortanswer','block_edmodo'), array(' '), false);
+        $mform->addGroup($mc_arraytable, 'multichoice_group',get_string('multichoice','block_edmodo'), array(' '), false);
+        $mform->addGroup($matching_arraytable, 'matching_group',get_string('matching','block_edmodo'), array(' '), false);
+
+        $answerside_array=array('0'=>get_string('termasanswer','block_edmodo'),'1'=>get_string('definitionasanswer','block_edmodo'));
+
+        //add a little explanation
+        $mform->addElement('static','answersideinstructions',get_string('answerside','block_edmodo'),get_string('answersideinstructions','block_edmodo'));
+        $mform->addElement('select','answerside','',$answerside_array);
+
 		
         //courseid
         $mform->addElement('hidden', 'courseid');
         $mform->setType('courseid', PARAM_INT);
-       
+
         //export type
 	$mform->addElement('hidden', 'exporttype',$exporttype);
         $mform->setType('exporttype', PARAM_TEXT);
@@ -232,12 +201,6 @@ class block_edmodo_export_form extends block_edmodo_qq_form  {
            case 'qq_direct':
                 $this->add_action_buttons(true,get_string('exporttoquestionsdirectheader','block_edmodo'));
                break;
-            case 'dd':
-                $this->add_action_buttons(true,get_string('exporttoddropheader','block_edmodo'));
-                break;
-            case 'dd_direct':
-                $this->add_action_buttons(true,get_string('exporttoddropdirectheader','block_edmodo'));
-                break;
        }
     }//end of definition method
     /*
@@ -249,13 +212,3 @@ class block_edmodo_export_form extends block_edmodo_qq_form  {
 	
 }//end of class
 
-
-class block_edmodo_search_form extends edmodo_search_form_qq {
-     public function definition() {
-        $mform = & $this->_form;
-	$mform->addElement('hidden', 'exporttype',$this->_customdata['exporttype']);
-        $mform->setType('exporttype', PARAM_TEXT);
-        parent::definition();
-     }
-    
-}

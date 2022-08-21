@@ -389,39 +389,34 @@ class edmodo_qq {
 
 }
 
-class edmodo_search_form_qq extends moodleform {
+class edmodo_upload_form_qq extends moodleform {
     function definition() {
         global $CFG;
 
         $mform =& $this->_form;
+        $mform->addElement('header', 'settingsheader', get_string('upload'));
+        //courseid
+        $mform->addElement('hidden', 'courseid');
+        $mform->setType('courseid', PARAM_INT);
 
-     $mform->addElement('text', 'searchtext', get_string('searchtext', 'block_edmodo'),array('size'=>64));
-     $mform->setType('searchtext',PARAM_TEXT);
-     $mform->addElement('hidden', 'courseid');
-     $mform->addElement('hidden', 'caller');
-     $mform->setType('courseid',PARAM_INT);
-     $mform->setType('caller',PARAM_URL);
-     $buttons = array(); 
-     $buttons[] =& $mform->createElement('submit', 'searchtype',  get_string("searchmysets", "block_edmodo"));
-     $buttons[] =& $mform->createElement('submit', 'searchtype',  get_string("searchtitles", "block_edmodo"));
-     $buttons[] =& $mform->createElement('submit', 'searchtype',  get_string("searchusers", "block_edmodo"));
-      $mform->addElement('group', 'buttonsgrp', '', $buttons, ' ', false);
+
+        $options = array();
+        $options['accepted_types'] = array('.zip');
+        $mform->addElement('filepicker', 'edmodofile', get_string('file'), 'size="40"', $options);
+        $mform->addRule('edmodofile', null, 'required');
+
+        $this->add_action_buttons(false, get_string('uploadfile', 'block_edmodo'));
 
     }
 	 public function definition_after_data() {
-		global $COURSE;
         parent::definition_after_data();
         $courseid = optional_param('courseid', 0, PARAM_INT);
-		$caller = optional_param('caller', '', PARAM_URL);
 
 		$mform =& $this->_form;
 		if($courseid > 0){
 			$el_courseid =& $mform->getElement('courseid');
 			$el_courseid->setValue($courseid);
 		}
-		if(!empty($caller)){
-			$el_caller =& $mform->getElement('caller');
-			$el_caller->setValue($caller);
-		}
+
 	}//end of function
 }

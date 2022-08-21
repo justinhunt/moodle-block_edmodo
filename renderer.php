@@ -48,7 +48,7 @@ class block_edmodo_renderer extends plugin_renderer_base {
 	}
 
 
-    function echo_edmodo_search_form($form){
+    function echo_edmodo_upload_form($form){
 		echo $this->output->heading(get_string('selectset','block_edmodo'), 3, 'main');
 		echo $this->output->box_start('generalbox');
 		$form->display();
@@ -68,16 +68,6 @@ class block_edmodo_renderer extends plugin_renderer_base {
                     case 'qq_direct':
                         // echo get_string('exporttofile', 'block_edmodo');
                         echo $this->output->heading(get_string('exportqqdirect', 'block_edmodo'), 2, 'main');
-                        break;
-
-                    case 'dd':
-                        // echo get_string('exporttoddrop', 'block_edmodo');
-                         echo $this->output->heading(get_string('exportddfile', 'block_edmodo'), 2, 'main');
-                         break;
-                    
-                    case 'dd_direct':
-                        // echo get_string('exporttoddrop', 'block_edmodo');
-                        echo $this->output->heading(get_string('exportdddirect', 'block_edmodo'), 2, 'main');
                         break;
                         
                 }

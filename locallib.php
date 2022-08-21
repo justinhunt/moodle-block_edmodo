@@ -31,8 +31,6 @@ require_once($CFG->dirroot . '/course/lib.php');
 
 class block_edmodo_helper {
 
-	private $exporttype;
-	private $matchtermscount = 6;
 	/**
      * constructor. make sure we have the right course
      * @param integer courseid id
@@ -42,91 +40,130 @@ class block_edmodo_helper {
         }
    
     //fetch question type file content, and export
-    function export_qqfile($edmodosets,$questiontypes, $answerside){
-        $filecontent = $this->make_qqfile($edmodosets, $questiontypes,$answerside);
+    function export_qqfile($edmodosets){
+        $filecontent = $this->make_qqfile($edmodosets);
         $filename ="edmodoimportdata.xml";
         send_file($filecontent, $filename, 0, 0, true, true);  
         return;
     }
 
-    
+    /**
+     * Recursively process a directory, reading the JSON files
+     * them to process_file().
+     *
+     * @param string $dir the full path of the directory to process
+     * @param array $results (by reference) accumulated statistics of
+     *              users updated and errors.
+     *
+     * @return nothing
+     */
+    function load_jsonfiles ($dir, &$results) {
+        global $OUTPUT;
+        if(!($handle = opendir($dir))) {
+            echo $OUTPUT->notification(get_string('cannotprocessdir', 'block_edmodo'));
+            return;
+        }
+
+        while (false !== ($item = readdir($handle))) {
+            if ($item != '.' && $item != '..') {
+                if (is_dir($dir.'/'.$item)) {
+                    $this->load_jsonfiles($dir.'/'.$item,  $results);
+                } else if (is_file($dir.'/'.$item))  {
+                    $ext = pathinfo($dir.'/'.$item, PATHINFO_EXTENSION);
+                    if($ext=="json") {
+                        $json_file = file_get_contents($dir . '/' . $item);
+                        if(!$json_file){
+                            $results['errors']++;
+                        }else{
+                            $results["quizzes"][]=json_decode($json_file);
+                            $results['updated']++;
+                        }
+
+                    }
+                }
+            }
+        }
+        closedir($handle);
+    }
+
+
+
     //if question import export, make file content
-    function make_qqfile($edmodoquiz,$questiontypes, $answerside){
+    function make_qqfile($edmodosets)
+    {
 
+        //this whole question type parsing is still rough
+        //need to clean up.
 
-	
-      //this whole question type parsing is still rough
-      //need to clean up.
-     
-    // build XML file - based on moodle/question/xml/format.php
-    // add opening tag
-    $expout = "";
-    $counter=0;
+        // build XML file - based on moodle/question/xml/format.php
+        // add opening tag
+        $expout = "";
+        $counter = 0;
 
-
-
-	//nesting on edmodo set, then question type, then each element in edmodo set as a question
-	foreach	($edmodoquiz->simplified_questions as $edmododata){
+    foreach($edmodosets as $edmodoquiz){
+        //nesting on edmodo set, then question type, then each element in edmodo set as a question
+        foreach ($edmodoquiz->simplified_questions as $edmododata) {
             if (!empty($edmododata)) {
 
-                        //for each passed in question type
+                //for each passed in question type
 
-                          $questiontype_params = explode("_", $qtype);
-                          $questiontype = $questiontype_params[0];
+                $questiontype_params = explode("_", $qtype);
+                $questiontype = $questiontype_params[0];
 
-                          //print out category
-                          $expout .= $this->print_category($edmododata, $qtype);
-                          
-                          //prepare data by question type for processing
-                          $terms = array();  
-                          switch($questiontype){
-                            case 'multichoice':
-                           
-                                    $answerstyle = $questiontype_params[1];   
-                                    foreach ($entries as $entry) {
-                                            if($answerside==0){
-                                                $terms[] = $entry->term;
-                                            }else{
-                                                $terms[] = $entry->definition;
-                                            }
-                                    }
-                                    break;
-                            case 'matching':
-                            case 'shortanswer':
-                                    $answerstyle = $questiontype_params[1];
-                                    break;
-                          }
-                          
-                          //make the body of the export per question
-                        switch ($questiontype){
-                          case 'multichoice':
-                          case 'shortanswer':
-                            foreach ($entries as $entry) {
-                                    $counter++;
-                                    $expout .= $this->data_to_mc_sa_question($entry,$terms,$questiontype, $answerstyle,$counter,$answerside);
+                //print out category
+                $expout .= $this->print_category($edmododata, $qtype);
+
+                //prepare data by question type for processing
+                $terms = array();
+                switch ($questiontype) {
+                    case 'multichoice':
+
+                        $answerstyle = $questiontype_params[1];
+                        foreach ($entries as $entry) {
+                            if ($answerside == 0) {
+                                $terms[] = $entry->term;
+                            } else {
+                                $terms[] = $entry->definition;
                             }
-                            break;
-                          case 'matching':
-                            $entrycount = count($entries);
-                            $lastentries = $entrycount % $config->matchingsubcount;
-                            $entriesmd = array_chunk($entries,$config->matchingsubcount,false);
-                            $entriesmdcount = count($entriesmd);
-                            //here we pad the last chunk with additional entries if it is too small
-                            if($entriesmdcount>1 && $lastentries > 0){
-                                for($x=0;$x<($config->matchingsubcount - $lastentries);$x++){
-                                    $entriesmd[$entriesmdcount-1][]=$entriesmd[$entriesmdcount-2][$config->matchingsubcount-$x-1];
-                                }
-                            }
-                            //here we pass in chunks of entries to make matching questions
-                            $qsetname = $this->clean_name($edmododata->title);
-                            foreach ($entriesmd as $entryset){
-                                $expout .= $this->data_to_matching_question($entryset,$questiontype, $qsetname . '_' . $counter, $counter,$answerside);
-                                $counter++;
-                            }
-                              
                         }
-              }//end of if entries
-	}//end of for each edmodo data
+                        break;
+                    case 'matching':
+                    case 'shortanswer':
+                        $answerstyle = $questiontype_params[1];
+                        break;
+                }
+
+                //make the body of the export per question
+                switch ($questiontype) {
+                    case 'multichoice':
+                    case 'shortanswer':
+                        foreach ($entries as $entry) {
+                            $counter++;
+                            $expout .= $this->data_to_mc_sa_question($entry, $terms, $questiontype, $answerstyle, $counter, $answerside);
+                        }
+                        break;
+                    case 'matching':
+                        $entrycount = count($entries);
+                        $lastentries = $entrycount % $config->matchingsubcount;
+                        $entriesmd = array_chunk($entries, $config->matchingsubcount, false);
+                        $entriesmdcount = count($entriesmd);
+                        //here we pad the last chunk with additional entries if it is too small
+                        if ($entriesmdcount > 1 && $lastentries > 0) {
+                            for ($x = 0; $x < ($config->matchingsubcount - $lastentries); $x++) {
+                                $entriesmd[$entriesmdcount - 1][] = $entriesmd[$entriesmdcount - 2][$config->matchingsubcount - $x - 1];
+                            }
+                        }
+                        //here we pass in chunks of entries to make matching questions
+                        $qsetname = $this->clean_name($edmododata->title);
+                        foreach ($entriesmd as $entryset) {
+                            $expout .= $this->data_to_matching_question($entryset, $questiontype, $qsetname . '_' . $counter, $counter, $answerside);
+                            $counter++;
+                        }
+
+                }
+            }//end of if entries
+        }//end of for each edmodo quiz
+    }//end of edmodosets
     	
     	 // initial string;
         // add the xml headers and footers
@@ -140,71 +177,9 @@ class block_edmodo_helper {
         //return the content
        return $content;
     }
-        
-   //if drag and drop export, make file
-    function make_ddfile($edmodosets,$activitytypes,$asarray=false){    
-           $stringcontent="";
-		   $arraycontent=array();
-           foreach($edmodosets as $qset){
-                   $qset_params = explode("-", $qset);
-           $qsetid = $qset_params[0];
-           $qsetname = $qset_params[1];
 
-                    foreach($activitytypes as $activity){
-						$newcontent = "name=$qsetname,activitytype=$activity,edmodoset=$qsetid,edmodosettitle=$qsetname,mintime=0,showcountdown=0,showcompletion=0";
-						if($asarray){
-							$arraycontent[]= $newcontent;
-						}else{
-                           $stringcontent.=$newcontent . "\n\n";
-						  }
-                   }
-           }
-		   
-		   if($asarray){
-				return $arraycontent;
-			}else{
-				return $stringcontent;
-			}
-   }
    
-   
-     //fetch activity type file content, and export
-    function export_ddfile($edmodosets,$activitytypes){
-		$asarray = false;
-        $filecontent = $this->make_ddfile($edmodosets, $activitytypes,$asarray);
-        $filename = "edmodoset_dragdrop.txt";
-        send_file($filecontent, $filename, 0, 0, true, true); 
-        return;
-    }
-   
-   function export_dd_to_course($edmodosets,$activitytypes,$section){
-		global $CFG, $COURSE;
-		require_once($CFG->dirroot . '/mod/edmodoimport/lib.php');
 
-		$asarray=true;
-		$activities =  $this->make_ddfile($edmodosets, $activitytypes,$asarray);
-		
-		foreach($activities as $activity){
-			$moddata = edmodoimport_parse_instancestring($activity);
-			$moddata->modulename = 'edmodoimport';
-			$moddata->visible=true;
-			$moddata->course = $COURSE->id;
-			$moddata->section=$section;
-			
-			switch ($moddata->activitytype){
-				case edmodo::TYPE_CARDS: $aname = 'Flashcards'; break;
-				case edmodo::TYPE_SCATTER:  $aname = 'Scatter'; break;
-				case edmodo::TYPE_SPACERACE:  $aname = 'Spacerace'; break;
-				case edmodo::TYPE_TEST:  $aname = 'Test'; break;
-				case edmodo::TYPE_SPELLER:  $aname = 'Speller'; break;
-				case edmodo::TYPE_LEARN:  $aname = 'Learn'; break;
-			}
-			//$moddata->introeditor = array('text' => $moddata->edmodosettitle . ':' . $aname,'format' => 1, 'itemid'=>0);
-			$moddata->introeditor = array('text' => $moddata->name,'format' => 1, 'itemid'=>0);
-			create_module($moddata);
-		}
-   }
-   
    //fetch a mform ready list of course sections for appending activities to
    function fetch_section_list(){
 	global $CFG, $COURSE, $DB;
@@ -223,7 +198,7 @@ class block_edmodo_helper {
        global $CFG, $DB, $COURSE;
        $success=true;
        //get export file
-       $filecontent = $this->make_qqfile($edmodosets, $questiontypes, $answerside);
+       $filecontent = $this->make_qqfile($edmodosets);
         $categorycontext = context::instance_by_id($category->contextid);
         $category->context = $categorycontext;
         $contexts = new question_edit_contexts($categorycontext);

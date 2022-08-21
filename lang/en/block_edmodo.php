@@ -152,3 +152,12 @@ $string['edmodo:myaddinstance'] = 'Add Edmodo block to MyHome';
 $string['edmodo:view'] = 'View Edmodo block';
 $string['edmodo:export'] = 'Export Edmodo block';
 $string['privacy:metadata'] = 'The Edmodo block does not store any user data.';
+//-------------------------
+$string['uploadfile'] = "Upload file";
+$string['cannotsavezip'] = "Could not save zip file";
+$string['cannotunzip'] = "Could not unzip file";
+$string['quizzes_processed'] = "Quizzes Processed";
+$string['errors'] = "Errors";
+$string['cannotprocessdir'] = "Cannot process Edmodo dir";
+
+

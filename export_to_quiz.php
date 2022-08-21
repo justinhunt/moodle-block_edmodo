@@ -46,11 +46,9 @@ if (isguestuser()) {
 //$PAGE->set_context($context);
 
 //get any params we might need
-$oauth2code = optional_param('oauth2code', 0, PARAM_RAW);
 $action = optional_param('action','', PARAM_TEXT);
-$exporttype = optional_param('exporttype','qq', PARAM_TEXT);
 $courseid = optional_param('courseid',0, PARAM_INT);
-$selectedsets =  optional_param_array('selectedsets',array(), PARAM_ALPHANUMEXT); 
+$exporttype = optional_param('exporttype','qq', PARAM_TEXT);
 
 if( $courseid==0){
     $course = get_course($COURSE->id);
@@ -62,55 +60,62 @@ if( $courseid==0){
 $context = context_course::instance($courseid);
 $PAGE->set_course($course);
 
-$url = new moodle_url('/blocks/edmodo/export_to_quiz.php', array('courseid'=>$courseid, 'action'=>$action, 'exporttype'=>$exporttype));
+//get our edmodo quiz helper class thingy
+$bqh = new block_edmodo_helper();
+
+
+$url = new moodle_url('/blocks/edmodo/export_to_quiz.php', array('courseid'=>$courseid, 'action'=>$action));
 $PAGE->set_url($url);
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagelayout('course');
 
 //get edmodo search form
-$search_form = new block_edmodo_search_form(null,array('exporttype'=>$exporttype));
-$search_data = $search_form->get_data();
+$upload_form = new edmodo_upload_form_qq(null,array());
+$formdata = $upload_form->get_data();
+if ($formdata) {
+
+        // Large files are likely to take their time and memory. Let PHP know
+        // that we'll take longer, and that the process should be recycled soon
+        // to free up memory.
+        core_php_time_limit::raise();
+        raise_memory_limit(MEMORY_EXTRA);
+
+        // Create a unique temporary directory, to process the zip file
+        // contents.
+        $zipdir = my_mktempdir($CFG->tempdir.'/', 'edmodoquizzes');
+        $dstfile = $zipdir.'/quizzes.zip';
+
+        if (!$mform->save_file('edmodofile', $dstfile, true)) {
+            echo $OUTPUT->notification(get_string('cannotsavezip', 'block_edmodo'));
+            @remove_dir($zipdir);
+        } else {
+            $fp = get_file_packer('application/zip');
+            $unzipresult = $fp->extract_to_pathname($dstfile, $zipdir);
+            if (!$unzipresult) {
+                echo $OUTPUT->notification(get_string('cannotunzip', 'block_edmodo'));
+                @remove_dir($zipdir);
+            } else {
+                // We don't need the zip file any longer, so delete it to make
+                // it easier to process the rest of the files inside the directory.
+                @unlink($dstfile);
+
+                $results = array ('errors' => 0,'updated' => 0, 'quizzes'=>[]);
+
+                $bqh->load_jsonfiles($zipdir,$results);
+
+                // Finally remove the temporary directory with all the user images and print some stats.
+                remove_dir($zipdir);
+                echo $OUTPUT->notification(get_string('quizzes_processed', 'block_edmodo') . ": " . $results['updated'], 'notifysuccess');
+                echo $OUTPUT->notification(get_string('errors', 'block_edmodo') . ": " . $results['errors'], ($results['errors'] ? 'notifyproblem' : 'notifysuccess'));
+                echo '<hr />';
+            }
+        }
+
+}
 
 
 //get our renderer
 $renderer = $PAGE->get_renderer('block_edmodo');
-
-  //Initialize Edmodo and deal with oauth etc
-	//i  - send off to auth screen
-	//ii - arrive back unauth, but with oauth2code
-	//iii - complete auth by getting access token
-	 $args = array(
-		'api_scope' => 'read'
-	);
-	$qiz  = new edmodo_qq($args);
-	
-	$qmessage = false;
-	if(!$qiz->is_authenticated() && $oauth2code){
-                $result  = $qiz->get_access_token($oauth2code);
-                if(!$result['success']){
-                        $qmessage = $result['error'];
-                }   
-     }
-
-
-//look for problems, and cancel out if there are
-$allok=true;
-if($qmessage){
-        //print header	
-        echo $renderer->header();
-	echo $renderer->display_error($qmessage);
-	$allok =false;
-}elseif(!$qiz->is_authenticated()){
-        //print header	
-        echo $renderer->header();
-	 echo $renderer->display_auth_link($qiz->fetch_auth_url());
-	 $allok =false;
-}
-
-if(!$allok){
-	echo $renderer->footer();
-	return;
-}
 
 //get information on sets
 $param_searchtext = '';
@@ -119,21 +124,7 @@ $usedata=array();
 if(!empty($search_data->searchtext)){
 	$param_searchtext = $search_data->searchtext;
 }
-if(!empty($search_data->searchtype)){
-	$param_searchtype = $search_data->searchtype;
-}
-$searchresult = $qiz->do_search($param_searchtext,$param_searchtype);
-if($searchresult['success']){
-	if(is_array($searchresult['data'])){
-		$setdata = $searchresult['data'];	
-	}else{
-		$setdata = $searchresult['data']->sets;
-	}
-	$usedata = $qiz->fetch_set_as_array($setdata);
-}
 
- //get our edmodo quiz helper class thingy
- $bqh = new block_edmodo_helper();
 
 
 //get sections for display in section box
@@ -141,7 +132,7 @@ $sections = $bqh->fetch_section_list();
 
 //deal with question export form
  $badmessage =false;
-$qform = new block_edmodo_export_form(null,array('exporttype'=>$exporttype,'qsets'=>$usedata,'sections'=>$sections));
+$qform = new block_edmodo_export_form(null,array('exporttype'=>$exporttype,'qsets'=>$usedata,'sections'=>$sections, 'courseid'=>$COURSE->id));
 
 if($action=='qq_dataexport' && !$qform->is_cancelled()){
     $qform_data = $qform->get_data();
@@ -149,10 +140,9 @@ if($action=='qq_dataexport' && !$qform->is_cancelled()){
     //if we have not selected set, refuse to proceed
     if(count($selectedsets)==0){
         $badmessage = get_string('noselectedset', 'block_edmodo');
-    }else{
-        switch($exporttype){
-            case 'qq':
-            case 'qq_direct':
+
+    }elseif($qform_data){
+       
                 $questiontypes = array();
                 if($qform_data->multichoice !== BLOCK_QUIZLET_NO){
                     $questiontypes[] = $qform_data->multichoice;
@@ -196,41 +186,6 @@ if($action=='qq_dataexport' && !$qform->is_cancelled()){
                     $badmessage = get_string('noquestiontype', 'block_edmodo');
                 }
 
-                break;
-            case 'dd':
-            case 'dd_direct':    
-                $activitytypes = array(); 
-                if($qform_data->flashcards){$activitytypes[]='flashcards';}
-                if($qform_data->scatter){$activitytypes[]='scatter';}
-                if($qform_data->speller){$activitytypes[]='speller';}
-                if($qform_data->test){$activitytypes[]='test';}
-                if($qform_data->learn){$activitytypes[]='learn';}
-                if($qform_data->spacerace){$activitytypes[]='spacerace';}
-                if(count($activitytypes)>0){
-                    if($exporttype=='dd'){
-                        $bqh->export_ddfile($selectedsets,$activitytypes);
-                    }else{
-					  echo $renderer->header();
-						$section = $qform_data->section;
-                        $bqh->export_dd_to_course($selectedsets,$activitytypes, $section);
-						 
-						 //prepare continue page
-						 $params =  array('id' => $courseid);
-						 $nexturl = new moodle_url('/course/view.php', $params);
-						 $nextmessage = get_string('exportedddtocourse', 'block_edmodo');
-						echo $renderer->display_continue_page($nexturl,$nextmessage);
-                        
-                        echo $renderer->footer();
-                        exit;
-                    }
-                   //the selectedsets won't come through in form data, for validation reasons I think
-                    //$bqh->export_ddfile($qform_data->selectedsets,$qform_data->activitytype);
-                }else{
-                    $badmessage = get_string('noactivitytype', 'block_edmodo');
-                }
-                break;
-
-        }//end of switch
     }//end of if no selected set
     
     //if we have no error message, probably it went through ok
@@ -251,12 +206,11 @@ $qform_data->matching = BLOCK_QUIZLET_NO;
 $qform->set_data($qform_data);
 
 //echo forms
-$renderer->echo_edmodo_search_form($search_form);
-$renderer->echo_question_export_form($qform, $exporttype, $badmessage);
-//$renderer->echo_ddrop_export_form($ddform);
+$renderer->echo_edmodo_upload_form($upload_form);
+//$renderer->echo_question_export_form($qform, $exporttype, $badmessage);
 
 //display preview iframe
-echo $renderer->display_preview_iframe(BLOCK_QUIZLET_IFRAME_NAME);
+//echo $renderer->display_preview_iframe(BLOCK_QUIZLET_IFRAME_NAME);
 
 //echo footer
 echo $renderer->footer();
