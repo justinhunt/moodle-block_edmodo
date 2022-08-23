@@ -18,6 +18,34 @@ require_once($CFG->dirroot . '/question/format.php');
 require_once($CFG->dirroot . '/question/format/xml/format.php');
 require_once($CFG->dirroot . '/course/lib.php');
 
+
+
+/**
+ * Create a unique temporary directory with a given prefix name,
+ * inside a given directory, with given permissions. Return the
+ * full path to the newly created temp directory.
+ *
+ * @param string $dir where to create the temp directory.
+ * @param string $prefix prefix for the temp directory name (default '')
+ *
+ * @return string The full path to the temp directory.
+ */
+function my_mktempdir($dir, $prefix='') {
+    global $CFG;
+
+    if (substr($dir, -1) != '/') {
+        $dir .= '/';
+    }
+
+    do {
+        $path = $dir.$prefix.mt_rand(0, 9999999);
+    } while (file_exists($path));
+
+    check_dir_exists($path);
+
+    return $path;
+}
+
 /**
  * Edmodo Quiz
  *
@@ -57,7 +85,7 @@ class block_edmodo_helper {
      *
      * @return nothing
      */
-    function load_jsonfiles ($dir, &$results) {
+    function process_jsonfiles ($dir, &$results) {
         global $OUTPUT;
         if(!($handle = opendir($dir))) {
             echo $OUTPUT->notification(get_string('cannotprocessdir', 'block_edmodo'));
@@ -70,7 +98,7 @@ class block_edmodo_helper {
                     $this->load_jsonfiles($dir.'/'.$item,  $results);
                 } else if (is_file($dir.'/'.$item))  {
                     $ext = pathinfo($dir.'/'.$item, PATHINFO_EXTENSION);
-                    if($ext=="json") {
+                    if($ext=="json" && strpos($item,'quiz_content')>-1) {
                         $json_file = file_get_contents($dir . '/' . $item);
                         if(!$json_file){
                             $results['errors']++;
@@ -92,78 +120,73 @@ class block_edmodo_helper {
     function make_qqfile($edmodosets)
     {
 
-        //this whole question type parsing is still rough
-        //need to clean up.
-
         // build XML file - based on moodle/question/xml/format.php
         // add opening tag
         $expout = "";
         $counter = 0;
 
-    foreach($edmodosets as $edmodoquiz){
-        //nesting on edmodo set, then question type, then each element in edmodo set as a question
-        foreach ($edmodoquiz->simplified_questions as $edmododata) {
-            if (!empty($edmododata)) {
 
-                //for each passed in question type
+        foreach($edmodosets as $edmodoquiz){
 
-                $questiontype_params = explode("_", $qtype);
-                $questiontype = $questiontype_params[0];
+            //print out category
+            $expout .= $this->print_category($edmodoquiz->containing_folder_name, $edmodoquiz->slug);
 
-                //print out category
-                $expout .= $this->print_category($edmododata, $qtype);
+            //nesting on edmodo set, then question type, then each element in edmodo set as a question
+            foreach ($edmodoquiz->simplified_questions as $edmododata) {
+                if (!empty($edmododata)) {
 
-                //prepare data by question type for processing
-                $terms = array();
-                switch ($questiontype) {
-                    case 'multichoice':
 
-                        $answerstyle = $questiontype_params[1];
-                        foreach ($entries as $entry) {
-                            if ($answerside == 0) {
-                                $terms[] = $entry->term;
-                            } else {
-                                $terms[] = $entry->definition;
-                            }
-                        }
-                        break;
-                    case 'matching':
-                    case 'shortanswer':
-                        $answerstyle = $questiontype_params[1];
-                        break;
-                }
+                    $questiontype = $this->edmodo_qtype_to_moodle_qtype($edmododata->question_type);
 
-                //make the body of the export per question
-                switch ($questiontype) {
-                    case 'multichoice':
-                    case 'shortanswer':
-                        foreach ($entries as $entry) {
+                    //prepare data by question type for processing
+                    $terms = array();
+                    switch ($questiontype) {
+                        case 'multichoice':
+                        case 'multichoice_ma':
+                            $answerstyle = 'abc';//abc ABC 123 none
+                            break;
+                        case 'matching':
+                        case 'cloze':
+                            $answerstyle = '0';// Case Sensitive 1 / Case insensitive 0
+                            break;
+                    }
+
+                    //make the body of the export per question
+                    switch ($questiontype) {
+                        case 'multichoice':
                             $counter++;
-                            $expout .= $this->data_to_mc_sa_question($entry, $terms, $questiontype, $answerstyle, $counter, $answerside);
-                        }
-                        break;
-                    case 'matching':
-                        $entrycount = count($entries);
-                        $lastentries = $entrycount % $config->matchingsubcount;
-                        $entriesmd = array_chunk($entries, $config->matchingsubcount, false);
-                        $entriesmdcount = count($entriesmd);
-                        //here we pad the last chunk with additional entries if it is too small
-                        if ($entriesmdcount > 1 && $lastentries > 0) {
-                            for ($x = 0; $x < ($config->matchingsubcount - $lastentries); $x++) {
-                                $entriesmd[$entriesmdcount - 1][] = $entriesmd[$entriesmdcount - 2][$config->matchingsubcount - $x - 1];
-                            }
-                        }
-                        //here we pass in chunks of entries to make matching questions
-                        $qsetname = $this->clean_name($edmododata->title);
-                        foreach ($entriesmd as $entryset) {
-                            $expout .= $this->data_to_matching_question($entryset, $questiontype, $qsetname . '_' . $counter, $counter, $answerside);
-                            $counter++;
-                        }
+                            $expout .= $this->data_to_mc_question($edmododata, $answerstyle, $counter);
+                            break;
 
-                }
-            }//end of if entries
-        }//end of for each edmodo quiz
-    }//end of edmodosets
+                        case 'multichoice_ma':
+                            $counter++;
+                            $expout .= $this->data_to_mc_question($edmododata, $answerstyle, $counter,true);
+                            break;
+
+                        case 'essay':
+                            $counter++;
+                            $expout .= $this->data_to_essay_question($edmododata, $counter);
+                            break;
+
+                        case 'matching':
+                            $counter++;
+                            $expout .= $this->data_to_matching_question($edmododata, $counter);
+                            break;
+
+                        case 'truefalse':
+                            $counter++;
+                            $expout .= $this->data_to_tf_question($edmododata, $counter);
+                            break;
+
+                        case 'cloze':
+                            $counter++;
+                            $expout .= $this->data_to_cloze_question($edmododata, $counter);
+                            break;
+
+                    }
+                }//end of if entries
+            }//end of for each edmodo quiz
+        }//end of edmodosets
     	
     	 // initial string;
         // add the xml headers and footers
@@ -178,20 +201,6 @@ class block_edmodo_helper {
        return $content;
     }
 
-   
-
-   //fetch a mform ready list of course sections for appending activities to
-   function fetch_section_list(){
-	global $CFG, $COURSE, $DB;
-	$conditions=array('course'=>$COURSE->id);
-	$sections = $DB->get_records_menu('course_sections',$conditions,'section','section,name'); 
-	 //massage the section data a little, just in case the name field is blank
-	 $usesections = array();
-	 foreach($sections as $sectionid=>$sectionname){
-		$usesections[$sectionid] = $sectionid . ': ' . $sectionname;
-	 }
-    return $usesections;
-   }
    
      //export direct to qbank
    function export_qq_to_qbank($edmodosets,$questiontypes, $answerside,$category, $pageurl){
@@ -252,10 +261,11 @@ class block_edmodo_helper {
     	return preg_replace("/[^A-Za-z0-9]/", "_", $originalname);
     }        
     
-    function print_category($edmododata, $questiontype){
+    function print_category($containing_folder, $slug){
 		   $ret = "";
-		   $cleanname = $this->clean_name($edmododata->title . '_' . $edmododata->created_by . '_' . $edmododata->id);
-		   $categorypath = $this->writetext( 'edmodoquestions/' . $cleanname . '/' . $questiontype );
+		   $cleanfolder = $this->clean_name($containing_folder);
+           $cleantitle = $this->clean_name($slug);
+		   $categorypath = $this->writetext( 'edmodoquestions/' . $cleanfolder . '/' . $cleantitle );
            $ret  .= "  <question type=\"category\">\n";
            $ret  .= "    <category>\n";
            $ret  .= "        $categorypath\n";
@@ -268,37 +278,42 @@ class block_edmodo_helper {
         switch($edmodo_qtype){
             case 'true_false': return 'truefalse';
             case 'multi_choice': return 'multichoice';
-            case 'short_answer': return 'shortanswer';
+            case 'short_answer': return 'essay';
             case 'fill_in_blank': return 'cloze';
             case 'matching': return 'matching';
-            case 'multi_answer': return 'multichoice';
-
+            case 'multi_answer': return 'multichoice_ma';
         }
     }
 
    
-   function data_to_matching_question($allentries, $questiontype, $qname, $counter,$answerside){
-	
-            $ret = "";          
+   function data_to_matching_question($qdata,  $counter){
+
+           $ret = "";
+            $files = $this->parsefiles($qdata);
+
             $ret .= "\n\n<!-- question: $counter  -->\n";            
             $qtformat = "html";
-            $ret .= "  <question type=\"$questiontype\">\n";
-            $ret .= "    <name>" . $this->writetext($qname,2,true ). "</name>\n";
+            $ret .= "  <question type=\"matching\">\n";
+            $ret .= "    <name><text>Matching</text></name>\n";
             $ret .= "    <questiontext format=\"$qtformat\">\n";
-            $ret .= $this->writetext(get_string('matchingquestiontext','block_edmodo'),2,false);
+           if(count( $files)>0){
+               $links='';
+               $filetags='';
+               foreach($files as $filesdata){
+                   $links .= $filesdata['text'];
+                   $filetags .= $filesdata['file'];
+               }
+               $ret .= $this->writetext( $qdata->text . $links );
+               $ret .= $filetags;
+           }else{
+               $ret .= $this->writetext( $qdata->text );
+           }
             $ret .= "    </questiontext>\n";
-            foreach($allentries as $entry){
-                if($answerside==0){
-                    $thedefinition = trusttext_strip($entry->definition);
-                    $theterm = trusttext_strip($entry->term);
-                }else{
-                   $thedefinition = trusttext_strip($entry->term);
-                    $theterm = trusttext_strip($entry->definition); 
-                }
-                $theimage = $entry->image;
-                
-                switch($questiontype){
-                    case 'matching':
+            for($i=0;$i<count($qdata->choices);$i++){
+                $theterm = trusttext_strip($qdata->correct_answers[$i]);
+                $thedefinition = trusttext_strip($qdata->choices[$i]);
+                $theimage =false; // $entry->image;
+
                          $ret .= "<subquestion format=\"html\">\n ";
                          if($theimage){
                             $ret .= $this->writeimage( $theimage,'base64',$thedefinition)."\n";  
@@ -309,108 +324,296 @@ class block_edmodo_helper {
                            $ret .= $this->writetext( $theterm,3,true );
                            $ret .= "    </answer>\n";
                             $ret .= "</subquestion>\n";
-                           break;
-                }//end of switch
+
             }
            
             // close the question tag
             $ret .= "</question>\n";		
             return $ret;
 	}//end of function            
-	
-        
-        
-	function data_to_mc_sa_question($entry,$allterms, $questiontype, $answerstyle, $counter,$answerside){
-	
-		$ret = "";
-            if($answerside==0){
-                $definition = trusttext_strip($entry->definition);
-                $currentterm = trusttext_strip($entry->term);
-            }else{
-                $definition = trusttext_strip($entry->term);
-                $currentterm = trusttext_strip($entry->definition);
+
+    function data_to_sa_question($qdata, $questiontype, $answerstyle, $counter){
+
+        $ret = "";
+        $files = $this->parsefiles($qdata);
+
+        $currentterm = trusttext_strip($qdata->choices[$qdata->correct_answer]);
+
+        $ret .= "\n\n<!-- question: $counter  -->\n";
+        $qtformat = "html";
+        $ret .= "  <question type=\"$questiontype\">\n";
+        $ret .= "    <name><text>short answer</text></name>\n";
+        $ret .= "    <questiontext format=\"$qtformat\">\n";
+        if(count( $files)>0){
+            $links='';
+            $filetags='';
+            foreach($files as $filesdata){
+                $links .= $filesdata['text'];
+                $filetags .= $filesdata['file'];
             }
-            $currentimage = $entry->image;
-            
-        	$ret .= "\n\n<!-- question: $counter  -->\n";            
-    		$name_text = $this->writetext( $currentterm );
+            $ret .= $this->writetext( $qdata->text . $links );
+            $ret .= $filetags;
+        }else{
+            $ret .= $this->writetext( $qdata->text );
+        }
+
+        $ret .= "    </questiontext>\n";
+
+
+        $ret .= "    <usecase>$answerstyle</usecase>\n ";
+        $percent = 100;
+        $ret .= "    <answer fraction=\"$percent\">\n";
+        $ret .= $this->writetext( $currentterm,3,false );
+        $ret .= "    </answer>\n";
+
+
+        // close the question tag
+        $ret .= "</question>\n";
+        return $ret;
+    }//end of function
+
+    function data_to_essay_question($qdata,  $counter){
+
+        $ret = "";
+        $files = $this->parsefiles($qdata);
+
+        $ret .= "\n\n<!-- question: $counter  -->\n";
+        $qtformat = "html";
+        $ret .= "  <question type=\"essay\">\n";
+        $ret .= "    <name><text>Short Answer (essay)</text></name>\n";
+        $ret .= "    <questiontext format=\"$qtformat\">\n";
+        if(count( $files)>0){
+            $links='';
+            $filetags='';
+            foreach($files as $filesdata){
+                $links .= $filesdata['text'];
+                $filetags .= $filesdata['file'];
+            }
+            $ret .= $this->writetext( $qdata->text . $links );
+            $ret .= $filetags;
+        }else{
+            $ret .= $this->writetext( $qdata->text );
+        }
+
+        $ret .= "    </questiontext>\n";
+        $ret .= "    <answer fraction=\"0\">\n";
+        $ret .= "      <text></text>\n";
+        $ret .= "    </answer>\n";
+
+
+        // close the question tag
+        $ret .= "</question>\n";
+        return $ret;
+    }//end of function
+
+    function data_to_cloze_question($qdata,  $counter){
+
+        $ret = "";
+
+        $ret = "";
+        $files = $this->parsefiles($qdata);
+
+        $ret .= "\n\n<!-- question: $counter  -->\n";
+        $qtformat = "html";
+        $ret .= "  <question type=\"cloze\">\n";
+        $ret .= "    <name><text>Fill in the blanks</text></name>\n";
+        $ret .= "    <questiontext format=\"$qtformat\">\n";
+        foreach($qdata->correct_answers as $canswer){
+            $cloze_answer = "&nbsp;{1:SHORTANSWER:=$canswer}&nbsp;";
+            $pos = strpos($qdata->text, '_');
+            if ($pos !== false) {
+                $qdata->text = substr_replace($qdata->text, $cloze_answer, $pos, 1);
+            }
+        }
+        if(count( $files)>0){
+            $links='';
+            $filetags='';
+            foreach($files as $filesdata){
+                $links .= $filesdata['text'];
+                $filetags .= $filesdata['file'];
+            }
+            $ret .= $this->writetext( $qdata->text . $links );
+            $ret .= $filetags;
+        }else{
+            $ret .= $this->writetext( $qdata->text );
+        }
+        $ret .= "    </questiontext>\n";
+
+
+        // close the question tag
+        $ret .= "</question>\n";
+        return $ret;
+    }//end of function
+
+
+    function data_to_mc_question($qdata,  $answerstyle, $counter,$multianswer=false){
+
+            $ret = "";
+            $files = $this->parsefiles($qdata);
+
+        	$ret .= "\n\n<!-- question: $counter  -->\n";
             $qtformat = "html";
-            $ret .= "  <question type=\"$questiontype\">\n";
-            $ret .= "    <name>$name_text</name>\n";
+            $ret .= "  <question type=\"multichoice\">\n";
+            $ret .= "    <name><text>Multi Choice</text></name>\n";
             $ret .= "    <questiontext format=\"$qtformat\">\n";
-            if($entry->image){
-            	 $ret .= $this->writeimage( $currentimage,'base64',$definition);
+
+            if(count( $files)>0){
+                $links='';
+                $filetags='';
+                foreach($files as $filesdata){
+                    $links .= $filesdata['text'];
+                    $filetags .= $filesdata['file'];
+                }
+                $ret .= $this->writetext( $qdata->text . $links );
+                $ret .= $filetags;
             }else{
-            	$ret .= $this->writetext( $definition );
+                $ret .= $this->writetext( $qdata->text );
             }
            
             $ret .= "    </questiontext>\n";
 
-            switch($questiontype){
-                case 'multichoice':
-                    $answerscount = 4;
-                    $ret .= "    <shuffleanswers>true</shuffleanswers>\n";
-                    $ret .= "    <answernumbering>".$answerstyle."</answernumbering>\n";
-                    //$terms2 = $terms;
-                    //try terms2 simply as allterms
-                    foreach ($allterms as $key => $value) {
-                       if ($value == $currentterm) {
-                               unset($allterms[$key]);
-                            }//end of if
-                    }//end of foreach
+            $ret .= "    <shuffleanswers>true</shuffleanswers>\n";
+            if($multianswer) {
+                $ret .= "    <single>false</single>\n";
+            }else{
+                $ret .= "    <single>true</single>\n";
+            }
+            $ret .= "    <answernumbering>".$answerstyle."</answernumbering>\n";
 
-                    //make sure we have enough terms in the edmodo set to make the question
-                    //if not use fewer answers
-                    if(count($allterms)<$answerscount){
-                            $answerscount = count($allterms) + 1;
+            $correctanswers=[];
+            if($multianswer){
+                foreach($qdata->selected_answers as $key=>$answer){
+                    if($answer){
+                        $correctanswers[]=$key;
                     }
+                }
+            }else{
+                $correctanswers[]=  $qdata->correct_answer;
+            }
 
-
-                    //get a random list of distractor answers
-                    //if we only have 1 distratctor, it won't be an array so we make one
-                    $rand_keys = array_rand($allterms, $answerscount-1);
-                    if(!is_array($rand_keys)){
-                            $rand_keys=array($rand_keys);
+            for ($i=0; $i<count($qdata->choices); $i++) {
+                    //If we have files inline in the answers we need to process those.
+                   // Its a bit hacky but we make a dummy qdata object so that we can pass the attachments info to parsefiles function
+                    $alinks='';
+                    $afiletags='';
+                    if(isset($qdata->answer_attachments) && isset($qdata->answer_attachments[$i]) && $qdata->answer_attachments[$i]!==null){
+                        $dummyqdata = new \stdClass();
+                        $dummyqdata->attachments = new \stdClass();
+                        $dummyqdata->attachments->files = [$qdata->answer_attachments[$i]];
+                        $answerfiles = $this->parsefiles($dummyqdata);
+                        foreach($answerfiles as $afilesdata){
+                            $alinks .= $afilesdata['text'];
+                            $afiletags .= $afilesdata['file'];
+                        }
+                        $qdata->choices[$i] .= $alinks;
                     }
+                    if (in_array($i,$correctanswers)) {
+                            $percent = 100;
+                            $ret .= "      <answer fraction=\"$percent\">\n";
 
-                    for ($i=0; $i<$answerscount; $i++) {
-                            if ($i === 0) {
-                                    $percent = 100;
-                                    $ret .= "      <answer fraction=\"$percent\">\n";
-                                    $ret .= $this->writetext( $currentterm,3,false )."\n";
-                                    $ret .= "      <feedback>\n";
-                                    $ret .= "      <text>\n";
-                                    $ret .= "      </text>\n";
-                                    $ret .= "      </feedback>\n";                    
-                                    $ret .= "    </answer>\n";
-                            } else {
-                                    $percent = 0;
-                                    $distracter = $allterms[$rand_keys[$i-1]];
-                                    $ret .= "      <answer fraction=\"$percent\">\n";
-                                    $ret .= $this->writetext( $distracter,3,false )."\n";
-                                    $ret .= "      <feedback>\n";
-                                    $ret .= "      <text>\n";
-                                    $ret .= "      </text>\n";
-                                    $ret .= "      </feedback>\n";
-                                    $ret .= "    </answer>\n";
-                            } //end of if $i === 0
-                    }//end of for i loop
-                    break;
-            case 'shortanswer':				
-                    $ret .= "    <usecase>$answerstyle</usecase>\n ";
-                    $percent = 100;
-                    $ret .= "    <answer fraction=\"$percent\">\n";
-                    $ret .= $this->writetext( $currentterm,3,false );
-                    $ret .= "    </answer>\n";
-                    break;
+                            $ret .= $this->writetext( $qdata->choices[$i],3,false )."\n";
+                            //output file tags if we have them
+                            if(!empty($afiletags)){$ret .= $afiletags;}
+                            $ret .= "      <feedback>\n";
+                            $ret .= "      <text>\n";
+                            $ret .= "      </text>\n";
+                            $ret .= "      </feedback>\n";
+                            $ret .= "    </answer>\n";
+                    } else {
+                            $percent = 0;
+                            $distracter =trusttext_strip($qdata->choices[$i]); ;
+                            $ret .= "      <answer fraction=\"$percent\">\n";
+                            $ret .= $this->writetext( $distracter,3,false )."\n";
+                            if(!empty($afiletags)){$ret .= $afiletags;}
+                            $ret .= "      <feedback>\n";
+                            $ret .= "      <text>\n";
+                            $ret .= "      </text>\n";
+                            $ret .= "      </feedback>\n";
+                            $ret .= "    </answer>\n";
+                    } //end of if $i === 0
+            }//end of for i loop
 
-            }//end of switch
-           
             // close the question tag
             $ret .= "</question>\n";		
             return $ret;
-	}//end of function            
-	
+	}//end of function
+
+    function data_to_tf_question($qdata, $counter){
+
+        $ret = "";
+        $files = $this->parsefiles($qdata);
+
+        $ret .= "\n\n<!-- question: $counter  -->\n";
+        $qtformat = "html";
+        $ret .= "  <question type=\"truefalse\">\n";
+        $ret .= "    <name><text>True/False</text></name>\n";
+        $ret .= "    <questiontext format=\"$qtformat\">\n";
+        if(count($files)>0){
+            $links='';
+            $filetags='';
+            foreach($files as $filesdata){
+                $links .= $filesdata['text'];
+                $filetags .= $filesdata['file'];
+            }
+            $ret .= $this->writetext( $qdata->text . $links );
+            $ret .= $filetags;
+        }else{
+            $ret .= $this->writetext( $qdata->text );
+        }
+        $ret .= "    </questiontext>\n";
+
+        $truepercent=0;
+        $falsepercent=0;
+        if ($qdata->correct_answer===true) {
+            $truepercent = 100;
+        }else{
+            $falsepercent = 0;
+        }
+        $ret .= " <answer fraction=\"$truepercent\">\n";
+        $ret .= "      <text>true</text>\n";
+        $ret .= "      <feedback>\n";
+        $ret .= "      <text>\n";
+        $ret .= "      </text>\n";
+        $ret .= "      </feedback>\n";
+        $ret .= "    </answer>\n";
+        $ret .= " <answer fraction=\"$falsepercent\">\n";
+        $ret .= "      <text>false</text>\n";
+        $ret .= "      <feedback>\n";
+        $ret .= "      <text>\n";
+        $ret .= "      </text>\n";
+        $ret .= "      </feedback>\n";
+        $ret .= "    </answer>\n";
+
+        // close the question tag
+        $ret .= "</question>\n";
+        return $ret;
+    }//end of function
+
+    function parsefiles($qdata){
+        $files=[];
+        if(isset($qdata->attachments->files) && count($qdata->attachments->files)>0){
+            foreach($qdata->attachments->files as $file){
+                if(in_array(strtolower($file->file_type),['jpg','jpeg','gif','png','svg','webp','bmp'])){
+                    $files[]=$this->writelink($file->download_url,$file->file_name, true,'base64');
+                }else{
+                    $files[]=$this->writelink($file->download_url,$file->file_name, false,'base64');
+                }
+            }
+        }
+
+        if(isset($qdata->attachments->embeds) && count($qdata->attachments->embeds)>0){
+            foreach($qdata->attachments->embeds as $embed) {
+                $files[] = ['text'=>'<p><a href="' . $embed->content . '" />' . $embed->title . '</a></p>','file'=>''];
+            }
+        }
+        if(isset($qdata->attachments->links) && count($qdata->attachments->links)>0){
+            foreach($qdata->attachments->links as $link) {
+                $files[] = ['text'=>'<p><a href="' . $link->link_url . '" />' . $link->title . '</a></p>','file'=>''];
+            }
+        }
+        return $files;
+    }
+
     /**
      * generates <text></text> tags, processing raw text therein
      * @param int ilev the current indent level
@@ -456,22 +659,42 @@ class block_edmodo_helper {
 
         return $string;
     }
-    
-    function fetchimage($url){
-		$headers[] = 'Accept: image/gif, image/x-bitmap, image/jpeg, image/pjpeg';              
-		$headers[] = 'Connection: Keep-Alive';         
-		$headers[] = 'Content-type: application/x-www-form-urlencoded;charset=UTF-8';         
-		$user_agent = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)';         
-		$process = curl_init($url);         
-		curl_setopt($process, CURLOPT_HTTPHEADER, $headers);         
-		curl_setopt($process, CURLOPT_HEADER, 0);         
-		curl_setopt($process, CURLOPT_USERAGENT, $user_agent);         
-		curl_setopt($process, CURLOPT_TIMEOUT, 30);         
-		curl_setopt($process, CURLOPT_RETURNTRANSFER, 1);         
-		curl_setopt($process, CURLOPT_FOLLOWLOCATION, 1);         
-		$return = curl_exec($process);         
-		curl_close($process);         
-		return $return;     
+
+    function writelink($url, $originalname,$isimage=true, $encoding='base64') {
+        if (!($url)) {
+            return '';
+        }
+
+        $filedata = $this->fetchfile($url);
+        $textstring = '';
+        $filestring = '';
+        if($isimage) {
+            $textstring.= '<p><img src="@@PLUGINFILE@@/' . $originalname . '" alt="' . $originalname . '"/></p>';
+        }else{
+            $textstring .= '<p><a href="@@PLUGINFILE@@/' . $originalname . '" />' .$originalname . '</a></p>';
+        }
+        $filestring  .= '<file name="' . $originalname . '" path="/" encoding="' . $encoding . '">';
+        $filestring  .= base64_encode($filedata);
+        $filestring  .= '</file>';
+
+        return ['text'=>$textstring,'file'=>$filestring];
+    }
+
+    function fetchfile($url){
+        $headers[] = 'Accept: image/gif, image/x-bitmap, image/jpeg, image/pjpeg, image/*, audio/*, video/*, application/pdf';
+        $headers[] = 'Connection: Keep-Alive';
+        $headers[] = 'Content-type: application/x-www-form-urlencoded;charset=UTF-8';
+        $user_agent = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)';
+        $process = curl_init($url);
+        curl_setopt($process, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($process, CURLOPT_HEADER, 0);
+        curl_setopt($process, CURLOPT_USERAGENT, $user_agent);
+        curl_setopt($process, CURLOPT_TIMEOUT, 30);
+        curl_setopt($process, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($process, CURLOPT_FOLLOWLOCATION, 1);
+        $return = curl_exec($process);
+        curl_close($process);
+        return $return;
     }
     
 	function xmltidy( $content ) {

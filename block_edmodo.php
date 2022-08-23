@@ -42,13 +42,13 @@ class block_edmodo extends block_base {
  
             $url = new moodle_url('/blocks/edmodo/export_to_quiz.php', array('courseid'=>$course->id,'exporttype'=>'qq_direct'));
             $this->content->text .= html_writer::link($url,get_string('qq_direct_exportlink','block_edmodo'));
-            
+           /*
             $url = new moodle_url('/blocks/edmodo/export_to_quiz.php', array('courseid'=>$course->id,'exporttype'=>'dd'));
             $this->content->text .= html_writer::link($url,get_string('dd_exportlink','block_edmodo'));
             
             $url = new moodle_url('/blocks/edmodo/export_to_quiz.php', array('courseid'=>$course->id,'exporttype'=>'dd_direct'));
             $this->content->text .= html_writer::link($url,get_string('dd_direct_exportlink','block_edmodo'));
-        
+        */
             
             $this->content->footer = '';
             return $this->content;

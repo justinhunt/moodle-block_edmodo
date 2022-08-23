@@ -12,41 +12,12 @@
     $questiontypes =  optional_param_array('questiontype',array(), PARAM_ALPHANUMEXT);  
     $activitytypes =  optional_param_array('activitytype',array(), PARAM_ALPHANUMEXT); 
 
-/*
-    if (! $course = $DB->get_record("course", array('id' => $courseid))) {
-        error("Course is misconfigured");
-    }
-*/
     require_login();
     
 	//Set up page
 	$context = context_user::instance($USER->id);
 
 
-   // require_capability('block/edmodo:export', $context);
-	/*
-
-    $filename = clean_filename(strip_tags(format_string($glossary->name,true)).'.xml');
-    $giftcategoryname = $glossary->name;
-	*/
-	/*
-	echo  'QUIZLETSETS<br />';
-	 foreach($edmodosets as $set){
-		echo $set . '<br />';
-	 }
-	 
-	 echo  'ACTIVITYTYPES<br />';
-	  foreach($activitytypes as $activity){
-		echo $activity . '<br />';
-	 }
-	 
-	 echo  'QUESTIONTYPES<br />';
-	 foreach($questiontypes as $qtype){
-		echo $qtype . '<br />';
-	 }
-	
-	return;
-	*/
     
 	
 	//if drag and drop export, make file
