@@ -5,6 +5,9 @@ Edmodo Quiz Import Block for Moodle
 This will allow you to import Edmodo quizzes into Moodle's Question Bank. It relies on the Edmodo Quizzes Export Google Chrome Extension by Bookwidgets.
 That can be obtained from here: https://chrome.google.com/webstore/detail/edmodo-quizzes-export/ehfboobiajeoeniifjgkhpemkbndlfab
 
+If you don't want to install the plugin on your own site, you can just use it from the Import Edmodo Quiz to Moodle page on the Poodll Demo Site:
+https://demo.poodll.com/course/view.php?id=67
+
 -------------------------------------------
 How to install on a moodle 3.x/4.x site.
 -------------------------------------------
