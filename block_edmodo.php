@@ -26,6 +26,7 @@ class block_edmodo extends block_base {
     function get_content() {
         global $USER, $CFG, $DB, $PAGE, $SESSION;
         $editing = $PAGE->user_is_editing();
+        $blockconfig = get_config('block_edmodo');
 
         // set view block permission to course:mod/glossary:export to prevent students etc to view this block
         $course = $this->page->course; 
@@ -39,16 +40,10 @@ class block_edmodo extends block_base {
             $this->content = new stdClass;
             $url = new moodle_url('/blocks/edmodo/export_to_quiz.php', array('courseid'=>$course->id,'exporttype'=>'qq'));
             $this->content->text = html_writer::link($url,get_string('qq_exportlink','block_edmodo'));
- 
-            $url = new moodle_url('/blocks/edmodo/export_to_quiz.php', array('courseid'=>$course->id,'exporttype'=>'qq_direct'));
-            $this->content->text .= html_writer::link($url,get_string('qq_direct_exportlink','block_edmodo'));
-           /*
-            $url = new moodle_url('/blocks/edmodo/export_to_quiz.php', array('courseid'=>$course->id,'exporttype'=>'dd'));
-            $this->content->text .= html_writer::link($url,get_string('dd_exportlink','block_edmodo'));
-            
-            $url = new moodle_url('/blocks/edmodo/export_to_quiz.php', array('courseid'=>$course->id,'exporttype'=>'dd_direct'));
-            $this->content->text .= html_writer::link($url,get_string('dd_direct_exportlink','block_edmodo'));
-        */
+            if($blockconfig->enableqqdirect) {
+                $url = new moodle_url('/blocks/edmodo/export_to_quiz.php', array('courseid' => $course->id, 'exporttype' => 'qq_direct'));
+                $this->content->text .= html_writer::link($url, get_string('qq_direct_exportlink', 'block_edmodo'));
+            }
             
             $this->content->footer = '';
             return $this->content;

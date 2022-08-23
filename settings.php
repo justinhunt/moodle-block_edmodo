@@ -29,4 +29,8 @@ defined('MOODLE_INTERNAL') || die;
 if ($ADMIN->fulltree) {
     require_once("$CFG->libdir/resourcelib.php");
 
+    $settings->add(new admin_setting_configcheckbox('block_edmodo/enableqqdirect',
+        get_string('enableqqdirect', 'block_edmodo'),
+        get_string('enableqqdirect_desc', 'block_edmodo'),'1'));
+
 }

@@ -3,7 +3,6 @@
 	global $SESSION, $DB;	
 	
 	require_once("../../config.php");
-	require_once($CFG->dirroot.'/mod/edmodoimport/edmodo.php');
     require_once("../../lib/filelib.php");
 
     $courseid = required_param('courseid', PARAM_INT);      // Course Module ID

@@ -31,7 +31,6 @@ global  $USER, $COURSE;
 
 require_once("../../config.php");
 require_once(dirname(__FILE__).'/forms.php');
-require_once(dirname(__FILE__).'/edmodo.php');
 require_once(dirname(__FILE__).'/locallib.php');
 require_once($CFG->libdir . '/questionlib.php');
 
@@ -59,12 +58,13 @@ if( $courseid==0){
 
 $context = context_course::instance($courseid);
 $PAGE->set_course($course);
+$blockconfig = get_config('block_edmodo');
 
 //get our edmodo quiz helper class thingy
 $bqh = new block_edmodo_helper();
 
 
-$url = new moodle_url('/blocks/edmodo/export_to_quiz.php', array('courseid'=>$courseid, 'action'=>$action));
+$url = new moodle_url('/blocks/edmodo/export_to_quiz.php', array('courseid'=>$courseid, 'action'=>$action,'exporttype'=>$exporttype));
 $PAGE->set_url($url);
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagelayout('course');
@@ -102,8 +102,19 @@ if ($formdata) {
                 $results = array ('errors' => 0,'updated' => 0, 'quizzes'=>[]);
 
                 $bqh->process_jsonfiles($zipdir,$results);
+                $doredirect=false;
                 if(count($results['quizzes'])>0) {
-                    $bqh->export_qqfile($results['quizzes']);
+                    //export direct to question bank
+                    if($exporttype=="qq_direct" &&  $blockconfig->enableqqdirect){
+                        $category = question_get_default_category($context->id);
+                        if(!$category){
+                            $category = question_make_default_categories(array('course'=>$context));
+                        }
+                        $doredirect =  $bqh->export_qq_to_qbank($results['quizzes'], $formdata->casesensitive,$formdata->multichoice_numbering,$category,$url);
+                    //export to file
+                    }else {
+                        $bqh->export_qqfile($results['quizzes'], $formdata->casesensitive, $formdata->multichoice_numbering);
+                    }
                 }
 
                 // Finally remove the temporary directory with all the user images and print some stats.
@@ -111,6 +122,11 @@ if ($formdata) {
                 echo $OUTPUT->notification(get_string('quizzes_processed', 'block_edmodo') . ": " . $results['updated'], 'notifysuccess');
                 echo $OUTPUT->notification(get_string('errors', 'block_edmodo') . ": " . $results['errors'], ($results['errors'] ? 'notifyproblem' : 'notifysuccess'));
                 echo '<hr />';
+
+                if($doredirect){
+                    $qbankurl =$CFG->wwwroot . '/question/edit.php?courseid=' . $courseid;
+                    redirect($qbankurl);
+                }
             }
         }
 
@@ -123,9 +139,10 @@ $renderer = $PAGE->get_renderer('block_edmodo');
 //echo footer
 echo $renderer->header();
 
+echo $renderer->show_intro();
+
 //echo form
 $renderer->echo_edmodo_upload_form($upload_form);
-
 
 //echo footer
 echo $renderer->footer();

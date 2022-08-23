@@ -33,14 +33,6 @@ class block_edmodo_renderer extends plugin_renderer_base {
 		 echo $qmessage;
 	}//end of func
 
-	function display_auth_link($authlink){
-		return html_writer::link($authlink, get_string('edmodologin', 'block_edmodo'));
-	}
-
-	function display_continue_page($nexturl, $message){
-		$nextmessage = $this->output->heading($message, 3, 'main');
-		return $nextmessage . $this->output->continue_button($nexturl);
-	}
 	
 	function display_continue_options($urlone,$labelone,$urltwo,$labeltwo,$message){
 		$nextmessage = $this->output->heading($message, 3, 'main');
@@ -49,71 +41,20 @@ class block_edmodo_renderer extends plugin_renderer_base {
 
 
     function echo_edmodo_upload_form($form){
-		echo $this->output->heading(get_string('selectset','block_edmodo'), 3, 'main');
 		echo $this->output->box_start('generalbox');
 		$form->display();
 		echo $this->output->box_end();
 	}
 
-	function echo_question_export_form($form, $exporttype, $message){
-                if($message){
-                    echo $this->output->heading($message, 3, 'badmessage'); 
-                }
-                switch($exporttype){
-                    case 'qq':
-                        // echo get_string('exporttofile', 'block_edmodo');
-                         echo $this->output->heading(get_string('exportqqfile', 'block_edmodo'), 2, 'main');
-                        break;
-                    
-                    case 'qq_direct':
-                        // echo get_string('exporttofile', 'block_edmodo');
-                        echo $this->output->heading(get_string('exportqqdirect', 'block_edmodo'), 2, 'main');
-                        break;
-                        
-                }
-                //echo $this->output->heading(get_string('exporttofileheader', 'block_edmodo'), 3, 'main');
-                echo $this->output->box_start('generalbox');
-		$form->display();
-		echo $this->output->box_end();
-	}
-	/*
-	function echo_ddrop_export_form($form){
+    /**
+     * Show the introduction text is as set in the activity description
+     */
+    public function show_intro() {
+        $ret = "";
+        $ret .= $this->output->box_start('generalbox');
+        $ret .= get_string('uploadinstructions', 'block_edmodo');;
+        $ret .= $this->output->box_end();
+        return $ret;
+    }
 
-		echo $this->output->heading(get_string('exporttoddropheader', 'block_edmodo'), 3, 'main');
-		echo get_string('exporttoddrop', 'block_edmodo');
-		echo $this->output->box_start('generalbox');
-		$form->display();
-		echo $this->output->box_end();
-	}
-         */
-        
-        
-        function display_preview_iframe($iframename){
-            //add our preview iframe box
-            //set up js
-            //$iframename = "edmodoimport_sampleset_flashcards";
-            $opts = array();
-            $opts['iframename'] = $iframename;
-            $opts['width'] = 550;
-            $opts['height'] = 350;
-            
-            $jsoptions = array($opts);
-            $this->page->requires->js_init_call('M.block_edmodo.iframehelper.init', $jsoptions, false);
-            //output the iframe
-            $ret = $this->output->box_start('generalbox');
-           // $ret.= "<iframe id='$iframename' name='$iframename' src=\"\" height=\"350\" width=\"550\" style=\"border:0;\"></iframe>";
-            $iframe_atts = array();
-            $iframe_atts['id']=$iframename;
-            $iframe_atts['name']=$iframename;
-            $iframe_atts['src']='';
-            $iframe_atts['height']=1;
-            $iframe_atts['width']=1;
-            $iframe_atts['class']='block_edmodo_iframepreview';
-            $iframe = html_writer::tag('iframe', '', $iframe_atts);
-            $ret .= $iframe;
-            $ret .= $this->output->box_end();
-            return $ret;
-        }
-       
-	
 }

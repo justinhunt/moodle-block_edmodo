@@ -68,8 +68,8 @@ class block_edmodo_helper {
         }
    
     //fetch question type file content, and export
-    function export_qqfile($edmodosets){
-        $filecontent = $this->make_qqfile($edmodosets);
+    function export_qqfile($edmodosets, $casesensitive,$multichoice_numbering){
+        $filecontent = $this->make_qqfile($edmodosets,$casesensitive,$multichoice_numbering);
         $filename ="edmodoimportdata.xml";
         send_file($filecontent, $filename, 0, 0, true, true);  
         return;
@@ -117,7 +117,7 @@ class block_edmodo_helper {
 
 
     //if question import export, make file content
-    function make_qqfile($edmodosets)
+    function make_qqfile($edmodosets,$casesensitive,$multichoice_numbering)
     {
 
         // build XML file - based on moodle/question/xml/format.php
@@ -143,11 +143,11 @@ class block_edmodo_helper {
                     switch ($questiontype) {
                         case 'multichoice':
                         case 'multichoice_ma':
-                            $answerstyle = 'abc';//abc ABC 123 none
+                            $answerstyle = $multichoice_numbering;//abc ABC 123 none
                             break;
                         case 'matching':
                         case 'cloze':
-                            $answerstyle = '0';// Case Sensitive 1 / Case insensitive 0
+                            $answerstyle = $casesensitive;// Case Sensitive 1 / Case insensitive 0
                             break;
                     }
 
@@ -203,11 +203,11 @@ class block_edmodo_helper {
 
    
      //export direct to qbank
-   function export_qq_to_qbank($edmodosets,$questiontypes, $answerside,$category, $pageurl){
+   function export_qq_to_qbank($edmodosets,$casesensitive,$multichoice_numbering,$category, $pageurl){
        global $CFG, $DB, $COURSE;
        $success=true;
        //get export file
-       $filecontent = $this->make_qqfile($edmodosets);
+       $filecontent = $this->make_qqfile($edmodosets,$casesensitive,$multichoice_numbering);
         $categorycontext = context::instance_by_id($category->contextid);
         $category->context = $categorycontext;
         $contexts = new question_edit_contexts($categorycontext);
@@ -603,6 +603,8 @@ class block_edmodo_helper {
 
         if(isset($qdata->attachments->embeds) && count($qdata->attachments->embeds)>0){
             foreach($qdata->attachments->embeds as $embed) {
+                //we might get lucky and get a youtube embed link, which we can patch up for Moodle to display properly
+                $embed->content = str_replace('https://www.youtube-nocookie.com/embed/','https://www.youtube.com/watch?v=',$embed->content);
                 $files[] = ['text'=>'<p><a href="' . $embed->content . '" />' . $embed->title . '</a></p>','file'=>''];
             }
         }
