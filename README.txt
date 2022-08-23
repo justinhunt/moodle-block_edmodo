@@ -29,20 +29,20 @@ These are explained below. They may be completed at this point, or at any time, 
 Configuring block EdmodoQuiz for Moodle
 --------------------------------------------------------------
 
-Plugin Settings for EdmodoQuiz Block
+Plugin Settings for Edmodo Block
 ***********************************************
-The settings for the EdmodoQuiz block can be found at:
-[Moodle Site]/Site Administration -> Plugins -> Blocks -> EdmodoQuiz
+The settings for the Edmodo block can be found at:
+[Moodle Site]/Site Administration -> Plugins -> Blocks -> Edmodo
 
 There is only one setting. To hide or show the import to question bank directly option. If it is a service for users you probably do not want to enable this, or your own question bank will get loaded up.
 
 How to Add a Edmodo Quiz Block to a Page
 ***********************************************
-Go into Edit mode and from the "Add a Block" block, choose to add a EdmodoQuiz block.
+Go into Edit mode and from the "Add a Block" block, choose to add a Edmodo block.
 
 
 --------------------------------------------------------------
-Using block EdmodoQuiz for Moodle
+Using block Edmodo for Moodle
 --------------------------------------------------------------
 
 A. Export from Edmodo Quiz Export file to Moodle Quiz XML file
