@@ -114,7 +114,7 @@ $string['selectinstructions'] = 'Select one or more edmodo sets from the list be
 $string['qchoiceinstructions'] = 'Select at least one question option from the question types below for export.';
 $string['actchoiceinstructions'] = 'Select at least one activity type from the question types below for export.';
 $string['qq_exportlink'] = 'Export Questions to Import File(XML)<br />';
-$string['qq_direct_exportlink'] = 'Export Questions direct to Question Bank<br />';
+$string['qq_direct_exportlink'] = 'Import Questions direct to Question Bank<br />';
 $string['nomatching'] = 'No Matching Questions';
 $string['yesmatching'] = 'Make Matching Questions';
 $string['matching'] = 'Matching Questions';
@@ -152,14 +152,14 @@ $string['edmodo:view'] = 'View Edmodo block';
 $string['edmodo:export'] = 'Export Edmodo block';
 $string['privacy:metadata'] = 'The Edmodo block does not store any user data.';
 //-------------------------
-$string['uploadfile'] = "Upload file";
+$string['uploadfile'] = "Make Moodle Questions";
 $string['cannotsavezip'] = "Could not save zip file";
 $string['cannotunzip'] = "Could not unzip file";
 $string['quizzes_processed'] = "Quizzes Processed";
 $string['errors'] = "Errors";
 $string['cannotprocessdir'] = "Cannot process Edmodo dir";
 $string['casesensitive'] = "Case Sensitive";
-$string['uploadinstructions'] = "Select the options for the questions that will be created and upload the file that you exported from Edmodo using the <a href='https://chrome.google.com/webstore/detail/edmodo-quizzes-export/ehfboobiajeoeniifjgkhpemkbndlfab'>Edmodo Quizzes Export</a> Google Chrome Extension by Bookwidgets. If all goes correctly, a Moodle question import file (XML) will be created and start to download automatically.";
+$string['uploadinstructions'] = "Select the options for the questions that will be created and upload the file that you exported from Edmodo using the <a href='https://chrome.google.com/webstore/detail/edmodo-quizzes-export/ehfboobiajeoeniifjgkhpemkbndlfab'>Edmodo Quizzes Export</a> Google Chrome Extension by Bookwidgets. If all goes correctly, a Moodle question import file (XML) will be created and either start to download automatically, or be imported into the Moodle site.";
 $string['enableqqdirect'] = "Enable Direct Import";
 $string['enableqqdirect_desc'] = "If checked you will be able to import directly to your courses question bank without having to download and upload the xml file.";
 

@@ -95,7 +95,7 @@ class block_edmodo_helper {
         while (false !== ($item = readdir($handle))) {
             if ($item != '.' && $item != '..') {
                 if (is_dir($dir.'/'.$item)) {
-                    $this->load_jsonfiles($dir.'/'.$item,  $results);
+                    $this->process_jsonfiles($dir.'/'.$item,  $results);
                 } else if (is_file($dir.'/'.$item))  {
                     $ext = pathinfo($dir.'/'.$item, PATHINFO_EXTENSION);
                     if($ext=="json" && strpos($item,'quiz_content')>-1) {
@@ -130,6 +130,9 @@ class block_edmodo_helper {
 
             //print out category
             $expout .= $this->print_category($edmodoquiz->containing_folder_name, $edmodoquiz->slug);
+
+            //make sure ths quiz has questions!!
+            if(!isset($edmodoquiz->simplified_questions)){continue;}
 
             //nesting on edmodo set, then question type, then each element in edmodo set as a question
             foreach ($edmodoquiz->simplified_questions as $edmododata) {
@@ -409,8 +412,6 @@ class block_edmodo_helper {
     function data_to_cloze_question($qdata,  $counter){
 
         $ret = "";
-
-        $ret = "";
         $files = $this->parsefiles($qdata);
 
         $ret .= "\n\n<!-- question: $counter  -->\n";
@@ -418,11 +419,15 @@ class block_edmodo_helper {
         $ret .= "  <question type=\"cloze\">\n";
         $ret .= "    <name><text>Fill in the blanks</text></name>\n";
         $ret .= "    <questiontext format=\"$qtformat\">\n";
-        foreach($qdata->correct_answers as $canswer){
-            $cloze_answer = "&nbsp;{1:SHORTANSWER:=$canswer}&nbsp;";
-            $pos = strpos($qdata->text, '_');
-            if ($pos !== false) {
-                $qdata->text = substr_replace($qdata->text, $cloze_answer, $pos, 1);
+
+        //make sure we have answers otherwise and then make cloze bits
+        if(!empty($qdata->correct_answers) && is_countable($qdata->correct_answers)) {
+            foreach ($qdata->correct_answers as $canswer) {
+                $cloze_answer = "&nbsp;{1:SHORTANSWER:=$canswer}&nbsp;";
+                $pos = strpos($qdata->text, '_');
+                if ($pos !== false) {
+                    $qdata->text = substr_replace($qdata->text, $cloze_answer, $pos, 1);
+                }
             }
         }
         if(count( $files)>0){
@@ -449,6 +454,12 @@ class block_edmodo_helper {
     function data_to_mc_question($qdata,  $answerstyle, $counter,$multianswer=false){
 
             $ret = "";
+
+            //make sure we have answers otherwise and then make cloze bits
+            if(empty($qdata->choices) || !is_countable($qdata->choices)) {
+                return $ret;
+            }
+
             $files = $this->parsefiles($qdata);
 
         	$ret .= "\n\n<!-- question: $counter  -->\n";
@@ -492,6 +503,12 @@ class block_edmodo_helper {
             }
 
             for ($i=0; $i<count($qdata->choices); $i++) {
+
+                    $thechoice = $qdata->choices[$i];
+                    if(empty($thechoice) || !is_string($thechoice)){
+                        $thechoice ='-';
+                    }
+
                     //If we have files inline in the answers we need to process those.
                    // Its a bit hacky but we make a dummy qdata object so that we can pass the attachments info to parsefiles function
                     $alinks='';
@@ -505,13 +522,13 @@ class block_edmodo_helper {
                             $alinks .= $afilesdata['text'];
                             $afiletags .= $afilesdata['file'];
                         }
-                        $qdata->choices[$i] .= $alinks;
+                        $thechoice .= $alinks;
                     }
                     if (in_array($i,$correctanswers)) {
                             $percent = 100;
                             $ret .= "      <answer fraction=\"$percent\">\n";
 
-                            $ret .= $this->writetext( $qdata->choices[$i],3,false )."\n";
+                            $ret .= $this->writetext($thechoice,3,false )."\n";
                             //output file tags if we have them
                             if(!empty($afiletags)){$ret .= $afiletags;}
                             $ret .= "      <feedback>\n";
@@ -521,7 +538,8 @@ class block_edmodo_helper {
                             $ret .= "    </answer>\n";
                     } else {
                             $percent = 0;
-                            $distracter =trusttext_strip($qdata->choices[$i]); ;
+
+                            $distracter =trusttext_strip($thechoice); ;
                             $ret .= "      <answer fraction=\"$percent\">\n";
                             $ret .= $this->writetext( $distracter,3,false )."\n";
                             if(!empty($afiletags)){$ret .= $afiletags;}
