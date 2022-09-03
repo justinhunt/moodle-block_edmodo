@@ -481,8 +481,9 @@ class block_edmodo_helper {
 
             $ret = "";
 
-            //make sure we have answers otherwise and then make cloze bits
-            if(empty($qdata->choices) || !is_countable($qdata->choices)) {
+            //make sure we have answers
+            // and make sure we have at least 2
+            if(empty($qdata->choices) || !is_countable($qdata->choices) || count($qdata->choices) < 2) {
                 return $ret;
             }
 
