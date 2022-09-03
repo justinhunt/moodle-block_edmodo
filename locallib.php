@@ -503,11 +503,11 @@ class block_edmodo_helper {
             }
 
             for ($i=0; $i<count($qdata->choices); $i++) {
+                $thechoice = $qdata->choices[$i];
+                if(empty($thechoice) || !is_string($thechoice)){
+                    $thechoice ='-';
+                }
 
-                    $thechoice = $qdata->choices[$i];
-                    if(empty($thechoice) || !is_string($thechoice)){
-                        $thechoice ='-';
-                    }
 
                     //If we have files inline in the answers we need to process those.
                    // Its a bit hacky but we make a dummy qdata object so that we can pass the attachments info to parsefiles function
@@ -643,10 +643,16 @@ class block_edmodo_helper {
     function writetext($raw, $ilev = 0, $short = true) {
         $indent = str_repeat('  ', $ilev);
 		
-		//tweak new lines
+
 		if(!empty($raw)){
+            //tweak new lines
 			$raw = str_replace("\n",'<br />',$raw);
 			$raw = str_replace("\r\n",'<br />',$raw);
+
+            //clean up any bad characters
+            //$raw = preg_replace('/\x0b/', ' ', $raw); //found VT , ETX  ,STX probably ms word artifacts
+            $raw = preg_replace('/[[:cntrl:]]/', '', $raw);
+
 		}
 
         // if required add CDATA tags
