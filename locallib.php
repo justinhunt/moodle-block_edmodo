@@ -341,8 +341,12 @@ class block_edmodo_helper {
                             $ret .= $this->writetext( $thedefinition,3,false )."\n";          
                          }
                            $ret .= "    <answer>\n";
-                           $ret .= $this->writetext( $theterm,3,true );
-                           $ret .= "    </answer>\n";
+                            //this will kill the import of the whole file if its too long, so we check here too
+                            $answercandidate = $this->writetext( $theterm,3,true );
+                            if(strlen($answercandidate) > 253){return '';}
+                            $ret .= $answercandidate;
+
+                            $ret .= "    </answer>\n";
                             $ret .= "</subquestion>\n";
 
             }
