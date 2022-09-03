@@ -412,6 +412,11 @@ class block_edmodo_helper {
     function data_to_cloze_question($qdata,  $counter){
 
         $ret = "";
+        //moodle wont import a cloze with no answers so we simply skip
+        if(empty($qdata->correct_answers) || !is_countable($qdata->correct_answers)) {
+            return $ret;
+        }
+
         $files = $this->parsefiles($qdata);
 
         $ret .= "\n\n<!-- question: $counter  -->\n";
