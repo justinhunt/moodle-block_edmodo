@@ -292,6 +292,23 @@ class block_edmodo_helper {
    function data_to_matching_question($qdata,  $counter){
 
            $ret = "";
+
+           //make sure we have answers
+           if(empty($qdata->choices) || !is_countable($qdata->choices)) {
+               return $ret;
+           }
+           if(empty($qdata->correct_answers) || !is_countable($qdata->correct_answers)) {
+               return $ret;
+           }
+
+           //if any of the choices are over 255 chars, its a bomb, answertext field in matching question is 255
+            for($i=0;$i<count($qdata->choices);$i++){
+                if(strlen($qdata->choices[$i])> 255 || strlen($qdata->correct_answers[$i])> 255){
+                    //just exit
+                    return $ret;
+                }
+            }
+
             $files = $this->parsefiles($qdata);
 
             $ret .= "\n\n<!-- question: $counter  -->\n";            
