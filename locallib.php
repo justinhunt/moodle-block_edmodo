@@ -332,22 +332,29 @@ class block_edmodo_helper {
             for($i=0;$i<count($qdata->choices);$i++){
                 $theterm = trusttext_strip($qdata->correct_answers[$i]);
                 $thedefinition = trusttext_strip($qdata->choices[$i]);
+
+                //if the term is an empty string, it will cause an error and stop import, so lets nix such questions
+                if(empty($theterm)){
+                    return '';
+                }
+
+                //We dont yet do images in the matching question, but we ought to support ddmatch or something like it
                 $theimage =false; // $entry->image;
 
-                         $ret .= "<subquestion format=\"html\">\n ";
-                         if($theimage){
-                            $ret .= $this->writeimage( $theimage,'base64',$thedefinition)."\n";  
-                         }else{
-                            $ret .= $this->writetext( $thedefinition,3,false )."\n";          
-                         }
-                           $ret .= "    <answer>\n";
-                            //this will kill the import of the whole file if its too long, so we check here too
-                            $answercandidate = $this->writetext( $theterm,3,true );
-                            if(strlen($answercandidate) > 253){return '';}
-                            $ret .= $answercandidate;
+                 $ret .= "<subquestion format=\"html\">\n ";
+                 if($theimage){
+                    $ret .= $this->writeimage( $theimage,'base64',$thedefinition)."\n";
+                 }else{
+                    $ret .= $this->writetext( $thedefinition,3,false )."\n";
+                 }
+                   $ret .= "    <answer>\n";
+                    //this will kill the import of the whole file if its too long, so we check here too
+                    $answercandidate = $this->writetext( $theterm,3,true );
+                    if(strlen($answercandidate) > 253){return '';}
+                    $ret .= $answercandidate;
 
-                            $ret .= "    </answer>\n";
-                            $ret .= "</subquestion>\n";
+                    $ret .= "    </answer>\n";
+                    $ret .= "</subquestion>\n";
 
             }
            
@@ -681,6 +688,11 @@ class block_edmodo_helper {
             $raw = preg_replace('/[[:cntrl:]]/', '', $raw);
 
 		}
+
+		//Edmodo uses latex notation for math symbols, [math] and [/math] are the markers for that.
+        //We replace those with $$ which is the Moodle marker for latex (tex and mathjax filters)
+        $raw = str_replace("[math]",'$$',$raw);
+        $raw = str_replace("[/math]",'$$',$raw);
 
         // if required add CDATA tags
         if (!empty($raw) and (htmlspecialchars($raw) != $raw)) {
