@@ -57,4 +57,22 @@ class block_edmodo_renderer extends plugin_renderer_base {
         return $ret;
     }
 
+    /**
+     * Show the introduction text is as set in the activity description
+     */
+    public function show_create_quiz_intro() {
+        $ret = "";
+        $ret .= $this->output->box_start('generalbox');
+        $ret .= get_string('createquizinstructions', 'block_edmodo');;
+        $ret .= $this->output->box_end();
+        return $ret;
+    }
+
+    function echo_create_quiz_form($form){
+        echo $this->output->box_start('generalbox');
+        $form->display();
+        echo $this->output->box_end();
+    }
+
+
 }

@@ -115,6 +115,7 @@ $string['qchoiceinstructions'] = 'Select at least one question option from the q
 $string['actchoiceinstructions'] = 'Select at least one activity type from the question types below for export.';
 $string['qq_exportlink'] = 'Export Questions to Import File(XML)<br />';
 $string['qq_direct_exportlink'] = 'Import Questions direct to Question Bank<br />';
+$string['qq_create_quiz'] = 'Create a quiz from question categories<br />';
 $string['nomatching'] = 'No Matching Questions';
 $string['yesmatching'] = 'Make Matching Questions';
 $string['matching'] = 'Matching Questions';
@@ -162,5 +163,10 @@ $string['casesensitive'] = "Case Sensitive";
 $string['uploadinstructions'] = "Select the options for the questions that will be created and upload the file that you exported from Edmodo using the <a href='https://chrome.google.com/webstore/detail/edmodo-quizzes-export/ehfboobiajeoeniifjgkhpemkbndlfab'>Edmodo Quizzes Export</a> Google Chrome Extension by Bookwidgets. If all goes correctly, a Moodle question import file (XML) will be created and either start to download automatically, or be imported into the Moodle site.";
 $string['enableqqdirect'] = "Enable Direct Import";
 $string['enableqqdirect_desc'] = "If checked you will be able to import directly to your courses question bank without having to download and upload the xml file.";
+$string['createquizinstructions'] = "Choose the question category from which to create a quiz";
+$string['enablecreatequiz'] = "Enable Quiz Creation";
+$string['enablecreatequiz_desc'] = "If checked a user can choose a question bank category and create a quiz from the questions in it.";
+$string['create_quizzes'] = "Create Quizzes";
+$string['use_category'] = "Top Category";
 
 

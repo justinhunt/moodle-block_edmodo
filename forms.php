@@ -141,3 +141,31 @@ class edmodo_upload_form_qq extends moodleform {
 
     }//end of function
 }
+
+/**
+ * Form to create quiz from category
+ *
+ * @copyright  2007 Jamie Pratt me@jamiep.org
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class edmodo_create_quiz_form extends moodleform {
+
+    protected function definition() {
+        global $OUTPUT;
+
+        $mform = $this->_form;
+
+        $defaultcategory = $this->_customdata['defaultcategory'];
+        $contexts = $this->_customdata['contexts'];
+
+        $mform->addElement('hidden', 'courseid');
+        $mform->setType('courseid', PARAM_INT);
+
+        $mform->addElement('questioncategory', 'category', get_string('use_category', 'block_edmodo'),array('contexts' => $contexts, 'top' => true));
+        $mform->setDefault('category', $defaultcategory);
+
+        // Submit button.
+        $this->add_action_buttons(false, get_string('create_quizzes', 'block_edmodo'));
+
+    }
+}

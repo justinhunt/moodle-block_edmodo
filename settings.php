@@ -33,4 +33,8 @@ if ($ADMIN->fulltree) {
         get_string('enableqqdirect', 'block_edmodo'),
         get_string('enableqqdirect_desc', 'block_edmodo'),'1'));
 
+    $settings->add(new admin_setting_configcheckbox('block_edmodo/enablecreatequiz',
+        get_string('enablecreatequiz', 'block_edmodo'),
+        get_string('enablecreatequiz_desc', 'block_edmodo'),'1'));
+
 }

@@ -204,6 +204,89 @@ class block_edmodo_helper {
        return $content;
     }
 
+    function create_quiz_from_qbank_category($categoryid, $courseid,$sectionNum){
+        global $CFG, $DB;
+        $results = ['created'=>0,'errors'=>0];
+
+        $cat = $DB->get_record('question_categories',array('id'=>$categoryid));
+        if($cat) {
+            $qs = $DB->get_records('question', array('category' => $cat->id, 'parent'=>0));
+            if(!$qs){
+                return $results;
+            }
+            $points = count($qs);
+        }else{
+            return $results;
+        }
+
+        //make quiz
+        $myQuiz = new stdClass();
+        $myQuiz->modulename='quiz';
+        $myQuiz->name = $cat->name;
+        $myQuiz->cmidnumber = '';
+        $myQuiz->introformat = 0;
+        $myQuiz->quizpassword = '';
+        $myQuiz->course = $courseid;
+        $myQuiz->section = $sectionNum;
+        $myQuiz->timeopen = 0;
+        $myQuiz->timeclose = 0;
+        $myQuiz->timelimit = 0;
+        $myQuiz->grade =  $points;
+        $myQuiz->sumgrades =  $points;
+        $myQuiz->gradeperiod = 0;
+        $myQuiz->attempts = 1;
+        $myQuiz->preferredbehaviour = 'deferredfeedback';
+        $myQuiz->attemptonlast = 0;
+        $myQuiz->shufflequestions = 0;
+        $myQuiz->grademethod = 1;
+        $myQuiz->questiondecimalpoints = 2;
+        $myQuiz->visible = 1;
+        $myQuiz->questionsperpage = 1;
+        $myQuiz->introeditor = array('text' => $cat->name,'format' => 1,'itemid'=>0);
+
+        //all of the review options
+        $myQuiz->attemptduring=1;
+        $myQuiz->correctnessduring=1;
+        $myQuiz->marksduring=1;
+        $myQuiz->specificfeedbackduring=1;
+        $myQuiz->generalfeedbackduring=1;
+        $myQuiz->rightanswerduring=1;
+        $myQuiz->overallfeedbackduring=1;
+
+        $myQuiz->attemptimmediately=1;
+        $myQuiz->correctnessimmediately=1;
+        $myQuiz->marksimmediately=1;
+        $myQuiz->specificfeedbackimmediately=1;
+        $myQuiz->generalfeedbackimmediately=1;
+        $myQuiz->rightanswerimmediately=1;
+        $myQuiz->overallfeedbackimmediately=1;
+
+        $myQuiz->marksopen=1;
+
+        $myQuiz->attemptclosed=1;
+        $myQuiz->correctnessclosed=1;
+        $myQuiz->marksclosed=1;
+        $myQuiz->specificfeedbackclosed=1;
+        $myQuiz->generalfeedbackclosed=1;
+        $myQuiz->rightanswerclosed=1;
+        $myQuiz->overallfeedbackclosed=1;
+
+        //actually make the quiz using the function from course/lib.php
+        $module = create_module($myQuiz);
+
+        //add questions
+        $addonpage = 1;
+        require_once($CFG->dirroot . '/mod/quiz/locallib.php');
+        foreach ($qs as $q) {
+            quiz_require_question_use($q->id);
+            quiz_add_quiz_question($q->id, $module, $addonpage);
+            quiz_delete_previews($module);
+            quiz_update_sumgrades($module);
+        }
+
+        $results['created'] = 1;
+        return $results;
+    }
    
      //export direct to qbank
    function export_qq_to_qbank($edmodosets,$casesensitive,$multichoice_numbering,$category, $pageurl){
