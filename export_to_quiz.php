@@ -135,6 +135,8 @@ if ($formdata) {
 
 //get our renderer
 $renderer = $PAGE->get_renderer('block_edmodo');
+$upload_form->set_data(['exporttype'=>$exporttype]);
+$upload_form->set_data(['courseid'=>$courseid]);
 
 //echo footer
 echo $renderer->header();

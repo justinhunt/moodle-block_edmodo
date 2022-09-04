@@ -59,6 +59,8 @@ function my_mktempdir($dir, $prefix='') {
 
 class block_edmodo_helper {
 
+    protected $zipdir = false;
+
 	/**
      * constructor. make sure we have the right course
      * @param integer courseid id
@@ -87,6 +89,9 @@ class block_edmodo_helper {
      */
     function process_jsonfiles ($dir, &$results) {
         global $OUTPUT;
+
+        $this->zipdir = $dir;
+
         if(!($handle = opendir($dir))) {
             echo $OUTPUT->notification(get_string('cannotprocessdir', 'block_edmodo'));
             return;
@@ -129,7 +134,7 @@ class block_edmodo_helper {
         foreach($edmodosets as $edmodoquiz){
 
             //print out category
-            $expout .= $this->print_category($edmodoquiz->containing_folder_name, $edmodoquiz->slug);
+            $expout .= $this->print_category($edmodoquiz->containing_folder_name, $edmodoquiz->slug, $edmodoquiz->description);
 
             //make sure ths quiz has questions!!
             if(!isset($edmodoquiz->simplified_questions)){continue;}
@@ -204,6 +209,19 @@ class block_edmodo_helper {
        return $content;
     }
 
+    function create_quizzes_from_qbank_category($categoryid, $courseid,$sectionNum){
+        $results = ['created'=>0,'errors'=>0];
+        $cats = question_categorylist($categoryid);
+        if($cats){
+            foreach($cats as $cat_id){
+               $result =  $this->create_quiz_from_qbank_category($cat_id, $courseid,$sectionNum);
+               $results['created'] += $result['created'];
+               $results['errors'] += $result['errors'];
+            }
+        }
+        return $results;
+    }
+
     function create_quiz_from_qbank_category($categoryid, $courseid,$sectionNum){
         global $CFG, $DB;
         $results = ['created'=>0,'errors'=>0];
@@ -212,10 +230,16 @@ class block_edmodo_helper {
         if($cat) {
             $qs = $DB->get_records('question', array('category' => $cat->id, 'parent'=>0));
             if(!$qs){
+                $results['errors']=1;
                 return $results;
             }
-            $points = count($qs);
+            $points =0;
+            foreach($qs as $q){
+                $points+=$q->defaultmark;
+            }
+
         }else{
+            $results['errors']=1;
             return $results;
         }
 
@@ -242,7 +266,7 @@ class block_edmodo_helper {
         $myQuiz->questiondecimalpoints = 2;
         $myQuiz->visible = 1;
         $myQuiz->questionsperpage = 1;
-        $myQuiz->introeditor = array('text' => $cat->name,'format' => 1,'itemid'=>0);
+        $myQuiz->introeditor = array('text' => $cat->info,'format' => 1,'itemid'=>0);
 
         //all of the review options
         $myQuiz->attemptduring=1;
@@ -347,7 +371,7 @@ class block_edmodo_helper {
     	return preg_replace("/[^A-Za-z0-9]/", "_", $originalname);
     }        
     
-    function print_category($containing_folder, $slug){
+    function print_category($containing_folder, $slug, $info=""){
 		   $ret = "";
 		   $cleanfolder = $this->clean_name($containing_folder);
            $cleantitle = $this->clean_name($slug);
@@ -356,6 +380,11 @@ class block_edmodo_helper {
            $ret  .= "    <category>\n";
            $ret  .= "        $categorypath\n";
            $ret  .= "    </category>\n";
+           if(!empty($info)){
+               $ret .="<info format=\"html\">\n";
+               $ret .=  $this->writetext($info) . "\n";
+               $ret .= "</info>\n";
+           }
            $ret  .= "  </question>\n"; 
 		return $ret;
 	}
@@ -426,7 +455,10 @@ class block_edmodo_helper {
 
                  $ret .= "<subquestion format=\"html\">\n ";
                  if($theimage){
-                    $ret .= $this->writeimage( $theimage,'base64',$thedefinition)."\n";
+                    $file = null;
+                    $originalname = "somefile.jpg";
+                    $isimage =true;
+                     $ret .= $this->writelink($file, $originalname,$isimage);
                  }else{
                     $ret .= $this->writetext( $thedefinition,3,false )."\n";
                  }
@@ -729,9 +761,9 @@ class block_edmodo_helper {
         if(isset($qdata->attachments->files) && count($qdata->attachments->files)>0){
             foreach($qdata->attachments->files as $file){
                 if(in_array(strtolower($file->file_type),['jpg','jpeg','gif','png','svg','webp','bmp'])){
-                    $files[]=$this->writelink($file->download_url,$file->file_name, true,'base64');
+                    $files[]=$this->writelink($file,$file->file_name, true,'base64');
                 }else{
-                    $files[]=$this->writelink($file->download_url,$file->file_name, false,'base64');
+                    $files[]=$this->writelink($file,$file->file_name, false,'base64');
                 }
             }
         }
@@ -791,29 +823,20 @@ class block_edmodo_helper {
         return $xml;
     }
 
-    function writeimage($image, $encoding='base64',$text='') {
-        if (!($image)) {
-            return '';
-        }
-        $filename = basename($image->url);
-        $width = $image->width;
-        $height = $image->height;
-        $imagestring = $this->fetchimage($image->url);
-        $string = '';
-		$string .= '<text><![CDATA[' . $text . '<p><img src="@@PLUGINFILE@@/' . $filename . '" alt="' . $filename . '" width="' . $width . '"  height="' . $height . '" /></p>]]></text>';
-		$string .= '<file name="' . $filename . '" path="/" encoding="' . $encoding . '">';
-		$string .= base64_encode($imagestring);
-		$string .= '</file>';
+    function writelink($file, $originalname,$isimage=true, $encoding='base64') {
 
-        return $string;
-    }
 
-    function writelink($url, $originalname,$isimage=true, $encoding='base64') {
+        $filedata = $this->fetchfile_local($file, $originalname);
+
+        //this workds but the URL expires, so it sucks
+        /*
+        $url = $file->url;
         if (!($url)) {
             return '';
         }
+        $filedata = $this->fetchfile_curl($url);
+        */
 
-        $filedata = $this->fetchfile($url);
         $textstring = '';
         $filestring = '';
         if($isimage) {
@@ -828,7 +851,15 @@ class block_edmodo_helper {
         return ['text'=>$textstring,'file'=>$filestring];
     }
 
-    function fetchfile($url){
+    function fetchfile_local($file, $filename){
+        $ext = pathinfo($this->zipdir.'/'. $filename, PATHINFO_EXTENSION);
+        $item = 'attachment-' . $file->id . '.' . $ext;
+        $filedata = file_get_contents($this->zipdir . '/' . $item);
+        return $filedata;
+    }
+
+
+    function fetchfile_curl($url){
         $headers[] = 'Accept: image/gif, image/x-bitmap, image/jpeg, image/pjpeg, image/*, audio/*, video/*, application/pdf';
         $headers[] = 'Connection: Keep-Alive';
         $headers[] = 'Content-type: application/x-www-form-urlencoded;charset=UTF-8';
@@ -857,6 +888,15 @@ class block_edmodo_helper {
         else {
             return $content;
         }
-    }	
+    }
+
+    function count_subcategories($categoryid){
+        $cats = question_categorylist($categoryid);
+        if($cats) {
+            return count($cats);
+        }else{
+            return 0;
+        }
+    }
 
 }

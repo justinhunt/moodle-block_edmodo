@@ -98,7 +98,9 @@ class edmodo_upload_form_qq extends moodleform {
         $mform =& $this->_form;
         //courseid
         $mform->addElement('hidden', 'courseid');
+        $mform->addElement('hidden', 'exporttype');
         $mform->setType('courseid', PARAM_INT);
+        $mform->setType('exporttype', PARAM_TEXT);
 
         //multichoice questions
         $attributes = array();

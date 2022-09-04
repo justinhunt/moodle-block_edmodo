@@ -36,8 +36,10 @@ class block_edmodo extends block_base {
         }
 
         $this->content = new stdClass;
+        $this->content->text = get_string('basicinstructions', 'block_edmodo');
+        $this->content->text .= '<br/>';
         $url = new moodle_url('/blocks/edmodo/export_to_quiz.php', array('courseid'=>$course->id,'exporttype'=>'qq'));
-        $this->content->text = html_writer::link($url,get_string('qq_exportlink','block_edmodo'));
+        $this->content->text .= html_writer::link($url,get_string('qq_exportlink','block_edmodo'));
         if($blockconfig->enableqqdirect) {
             $url = new moodle_url('/blocks/edmodo/export_to_quiz.php', array('courseid' => $course->id, 'exporttype' => 'qq_direct'));
             $this->content->text .= html_writer::link($url, get_string('qq_direct_exportlink', 'block_edmodo'));

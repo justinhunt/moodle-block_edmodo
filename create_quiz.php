@@ -47,6 +47,7 @@ if (isguestuser()) {
 //get any params we might need
 $action = optional_param('action','', PARAM_TEXT);
 $courseid = optional_param('courseid',0, PARAM_INT);
+$confirm = optional_param('confirm',0, PARAM_INT);
 $categoryid = optional_param('categoryid',0, PARAM_INT);
 
 if( $courseid==0){
@@ -64,7 +65,7 @@ $blockconfig = get_config('block_edmodo');
 $bqh = new block_edmodo_helper();
 
 
-$url = new moodle_url('/blocks/edmodo/create_quiz.php', array('courseid'=>$courseid, 'action'=>$action,'$categoryid'=>$categoryid));
+$url = new moodle_url('/blocks/edmodo/create_quiz.php', array('courseid'=>$courseid));
 $PAGE->set_url($url);
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagelayout('course');
@@ -78,16 +79,20 @@ if(!$blockconfig->enablecreatequiz){
 
 //get edmodo search form
 
-/*
-require_once($CFG->dirroot . '/question/editlib.php');
-list($thispageurl, $contexts, $cmid, $cm, $module, $pagevars) =
-    question_edit_setup('export', '/question/export.php');
-$defaultcategory =$pagevars['cat'];
-$contexts = $contexts->having_one_edit_tab_cap('export');
-*/
-
 $defaultcategory = $DB->get_field('course_categories','id',array('name'=>'edmodoquestions'));
 $contexts =[$context];
+
+
+
+//if this is a confirmation of a form submission ..
+if ($confirm and confirm_sesskey()) {
+    // a single quiz
+    //$results = $bqh->create_quiz_from_qbank_category($categoryid,$courseid,1);
+
+    //the quiz and all the sub quizzes too
+    $results = $bqh->create_quizzes_from_qbank_category($categoryid,$courseid,1);
+    redirect($url,get_string('cats_processed', 'block_edmodo',$results));
+}
 
 //get our renderer
 $renderer = $PAGE->get_renderer('block_edmodo');
@@ -98,10 +103,22 @@ $create_quiz_form = new edmodo_create_quiz_form(null,array('defaultcategory'=>$d
 $formdata = $create_quiz_form->get_data();
 if ($formdata) {
 
-    $results = $bqh->create_quiz_from_qbank_category($formdata->category,$courseid,1);
+    $strheading = get_string('createquizzesconfirm', 'block_edmodo');
+    $PAGE->navbar->add($strheading);
+    $PAGE->set_title($strheading);
+    $PAGE->set_heading($SITE->fullname);
+    echo $renderer->heading($strheading);
+    $yesurl = new moodle_url('/blocks/edmodo/create_quiz.php', array('courseid'=>$courseid,'categoryid'=>$formdata->category, 'confirm' => 1, 'sesskey' => sesskey()));
+    $nourl = $url;
+    $totalquizzes = $bqh->count_subcategories($formdata->category);
+    $message = get_string('createquizzesconfirmmessage', 'block_edmodo',$totalquizzes);
+    echo $renderer->confirm($message, $yesurl, $nourl);
+    echo $renderer->footer();
+    die;
 
-    echo $OUTPUT->notification(get_string('quizzes_processed', 'block_edmodo') . ": " . $results['created'], 'notifysuccess');
-   // echo $OUTPUT->notification(get_string('errors', 'block_edmodo') . ": " . $results['errors'], ($results['errors'] ? 'notifyproblem' : 'notifysuccess'));
+
+
+
 
 }
 
