@@ -227,12 +227,27 @@ class block_edmodo_helper {
         $results = ['created'=>0,'errors'=>0];
 
         $cat = $DB->get_record('question_categories',array('id'=>$categoryid));
+
         if($cat) {
-            $qs = $DB->get_records('question', array('category' => $cat->id, 'parent'=>0));
-            if(!$qs){
-                $results['errors']=1;
+            //Moodle before M4.0
+            if($CFG->version<2022041900) {
+
+                $qs = $DB->get_records('question', array('category' => $cat->id, 'parent' => 0));
+
+            }else {
+                //moodle 4.0+
+                $qs =  $DB->get_records_sql("SELECT q.* FROM {question} q 
+                    INNER JOIN {question_versions} qv ON qv.questionid = q.id
+                    INNER JOIN {question_bank_entries} qbe ON qv.questionbankentryid = qbe.id
+                    WHERE q.parent=0 and qbe.questioncategoryid =?",array($cat->id)
+                );
+            }
+
+            if (!$qs) {
+                $results['errors'] = 1;
                 return $results;
             }
+
             $points =0;
             foreach($qs as $q){
                 $points+=$q->defaultmark;
