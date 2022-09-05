@@ -70,8 +70,8 @@ class block_edmodo_helper {
         }
    
     //fetch question type file content, and export
-    function export_qqfile($edmodosets, $casesensitive,$multichoice_numbering){
-        $filecontent = $this->make_qqfile($edmodosets,$casesensitive,$multichoice_numbering);
+    function export_qqfile($edmodosets, $casesensitive,$multichoice_numbering,$ddmatch){
+        $filecontent = $this->make_qqfile($edmodosets,$casesensitive,$multichoice_numbering,$ddmatch);
         $filename ="edmodoimportdata.xml";
         send_file($filecontent, $filename, 0, 0, true, true);  
         return;
@@ -122,7 +122,7 @@ class block_edmodo_helper {
 
 
     //if question import export, make file content
-    function make_qqfile($edmodosets,$casesensitive,$multichoice_numbering)
+    function make_qqfile($edmodosets,$casesensitive,$multichoice_numbering, $ddmatch)
     {
 
         // build XML file - based on moodle/question/xml/format.php
@@ -178,7 +178,7 @@ class block_edmodo_helper {
 
                         case 'matching':
                             $counter++;
-                            $expout .= $this->data_to_matching_question($edmododata, $counter);
+                            $expout .= $this->data_to_matching_question($edmododata, $ddmatch, $counter);
                             break;
 
                         case 'truefalse':
@@ -188,7 +188,7 @@ class block_edmodo_helper {
 
                         case 'cloze':
                             $counter++;
-                            $expout .= $this->data_to_cloze_question($edmododata, $counter);
+                            $expout .= $this->data_to_cloze_question($edmododata,$casesensitive, $counter);
                             break;
 
                     }
@@ -328,11 +328,11 @@ class block_edmodo_helper {
     }
    
      //export direct to qbank
-   function export_qq_to_qbank($edmodosets,$casesensitive,$multichoice_numbering,$category, $pageurl){
+   function export_qq_to_qbank($edmodosets,$casesensitive,$multichoice_numbering,$ddmatch,$category, $pageurl){
        global $CFG, $DB, $COURSE;
        $success=true;
        //get export file
-       $filecontent = $this->make_qqfile($edmodosets,$casesensitive,$multichoice_numbering);
+       $filecontent = $this->make_qqfile($edmodosets,$casesensitive,$multichoice_numbering, $ddmatch);
         $categorycontext = context::instance_by_id($category->contextid);
         $category->context = $categorycontext;
         $contexts = new question_edit_contexts($categorycontext);
@@ -416,7 +416,7 @@ class block_edmodo_helper {
     }
 
    
-   function data_to_matching_question($qdata,  $counter){
+   function data_to_matching_question($qdata,  $ddmatch, $counter){
 
            $ret = "";
 
@@ -440,7 +440,12 @@ class block_edmodo_helper {
 
             $ret .= "\n\n<!-- question: $counter  -->\n";            
             $qtformat = "html";
-            $ret .= "  <question type=\"matching\">\n";
+            if($ddmatch){
+                $ret .= "  <question type=\"ddmatch\">\n";
+            }else{
+                $ret .= "  <question type=\"matching\">\n";
+            }
+
             $ret .= "    <name><text>Matching</text></name>\n";
             $ret .= "    <questiontext format=\"$qtformat\">\n";
            if(count( $files)>0){
@@ -477,14 +482,20 @@ class block_edmodo_helper {
                  }else{
                     $ret .= $this->writetext( $thedefinition,3,false )."\n";
                  }
-                   $ret .= "    <answer>\n";
-                    //this will kill the import of the whole file if its too long, so we check here too
-                    $answercandidate = $this->writetext( $theterm,3,true );
-                    if(strlen($answercandidate) > 253){return '';}
-                    $ret .= $answercandidate;
 
-                    $ret .= "    </answer>\n";
-                    $ret .= "</subquestion>\n";
+                if($ddmatch){
+                    $ret .= "    <answer format=\"html\">\n";
+                }else{
+                    $ret .= "    <answer>\n";
+                }
+
+                //this will kill the import of the whole file if its too long, so we check here too
+                $answercandidate = $this->writetext( $theterm,3,true );
+                if(strlen($answercandidate) > 253){return '';}
+                $ret .= $answercandidate;
+
+                $ret .= "    </answer>\n";
+                $ret .= "</subquestion>\n";
 
             }
            
@@ -567,7 +578,7 @@ class block_edmodo_helper {
         return $ret;
     }//end of function
 
-    function data_to_cloze_question($qdata,  $counter){
+    function data_to_cloze_question($qdata, $casesensitive, $counter){
 
         $ret = "";
         //moodle wont import a cloze with no answers so we simply skip
@@ -589,7 +600,11 @@ class block_edmodo_helper {
         //make sure we have answers otherwise and then make cloze bits
         if(!empty($qdata->correct_answers) && is_countable($qdata->correct_answers)) {
             foreach ($qdata->correct_answers as $canswer) {
-                $cloze_answer = "&nbsp;{1:SHORTANSWER:=$canswer}&nbsp;";
+                if($casesensitive) {
+                    $cloze_answer = "&nbsp;{1:SHORTANSWER_C:=$canswer}&nbsp;";
+                }else{
+                    $cloze_answer = "&nbsp;{1:SHORTANSWER:=$canswer}&nbsp;";
+                }
                 $pos = strpos($qdata->text, '_');
                 if ($pos !== false) {
                     $qdata->text = substr_replace($qdata->text, $cloze_answer, $pos, 1);

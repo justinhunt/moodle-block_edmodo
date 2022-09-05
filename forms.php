@@ -123,6 +123,12 @@ class edmodo_upload_form_qq extends moodleform {
         $mform->addGroup($sa_arraytable, 'casesensitive_group',get_string('fib_casesensitive','block_edmodo'), array(' '), false);
         $mform->addGroup($mc_arraytable, 'multichoice_group',get_string('multichoice_numbering','block_edmodo'), array(' '), false);
 
+        //ddmatch
+        $mform->addElement('selectyesno', 'ddmatch', get_string('useddmatch', 'block_edmodo'));
+        $mform->setDefault('ddmatch',0);
+        $mform->addElement('static', 'ddmatchinstructions', '',
+            get_string('useddmatch_desc', 'block_edmodo'));
+
         $options = array();
         $options['accepted_types'] = array('.zip');
         $mform->addElement('filepicker', 'edmodofile', get_string('file'), 'size="40"', $options);

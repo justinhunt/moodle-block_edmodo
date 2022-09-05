@@ -62,3 +62,6 @@ $string['use_category'] = "Start Category";
 $string['createquizzesconfirm']='Create Quizzes Confirm';
 $string['createquizzesconfirmmessage']='About to create quizzes in this course from {$a} categories. OK?';
 $string['basicinstructions']='Use the Edmodo Quiz zip file to create Moodle questions.';
+$string['useddmatch']='Use DDMatch';
+$string['useddmatch_desc']='Edmodo matching questions are drag-and-drop. Moodle matching questions are not. Also Moodle matching question answers do not support Latex notation. If you need drag-and-drop or Latex notation support in the answer options, you should install the 3rd party question type plugin DDMatch. Then select "Use DDMatch" here and the exported question will be DDMatch format. If you do not understand this, or do not have the ability to add new plugins to your Moodle site, then do not select this option.';
+

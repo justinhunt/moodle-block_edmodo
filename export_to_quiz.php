@@ -110,10 +110,10 @@ if ($formdata) {
                         if(!$category){
                             $category = question_make_default_categories(array('course'=>$context));
                         }
-                        $doredirect =  $bqh->export_qq_to_qbank($results['quizzes'], $formdata->casesensitive,$formdata->multichoice_numbering,$category,$url);
+                        $doredirect =  $bqh->export_qq_to_qbank($results['quizzes'], $formdata->casesensitive,$formdata->multichoice_numbering,$formdata->ddmatch,$category,$url);
                     //export to file
                     }else {
-                        $bqh->export_qqfile($results['quizzes'], $formdata->casesensitive, $formdata->multichoice_numbering);
+                        $bqh->export_qqfile($results['quizzes'], $formdata->casesensitive, $formdata->multichoice_numbering, $formdata->ddmatch);
                     }
                 }
 
