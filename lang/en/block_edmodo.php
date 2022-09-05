@@ -1,9 +1,9 @@
-<?php 
-
+<?php
+$string['pluginname'] = 'Edmodo';
 $string['multichoice'] = 'Multiple Choice';
 $string['notyetconfigured'] = 'Please <b>Turn editing on</b> to configure this block.';
 $string['notyetconfiguredediting'] = 'Please configure this block using the edit icon.';
-$string['pluginname'] = 'Edmodo';
+
 $string['shortanswer'] = 'Short answer';
 $string['shortanswer_0'] = 'Short answer (Case insensitive)';
 $string['shortanswer_1'] = 'Short answer (Case sensitive)';
@@ -54,7 +54,7 @@ $string['casesensitive'] = "Case Sensitive";
 $string['uploadinstructions'] = "Select the options for the questions that will be created and upload the file that you exported from Edmodo using the <a href='https://chrome.google.com/webstore/detail/edmodo-quizzes-export/ehfboobiajeoeniifjgkhpemkbndlfab'>Edmodo Quizzes Export</a> Google Chrome Extension by Bookwidgets. If you have a lot of data it can take some time.";
 $string['enableqqdirect'] = "Enable Direct Import";
 $string['enableqqdirect_desc'] = "If checked you will be able to import directly to your courses question bank without having to download and upload the xml file.";
-$string['createquizinstructions'] = "Choose the start category from which to create a quiz. For each category or sub category that contains questions, a quiz in the course will be created.";
+$string['createquizinstructions'] = "Choose the start category from which to create a quiz, and the course topic/section in which to create them. For each category or sub category that contains questions, a quiz in the course will be created.";
 $string['enablecreatequiz'] = "Enable Quiz Creation";
 $string['enablecreatequiz_desc'] = "If checked a user can choose a question bank category and create a quiz from the questions in it.";
 $string['create_quizzes'] = "Create Quizzes";

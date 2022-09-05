@@ -159,9 +159,20 @@ class edmodo_create_quiz_form extends moodleform {
 
         $defaultcategory = $this->_customdata['defaultcategory'];
         $contexts = $this->_customdata['contexts'];
+        $sections = $this->_customdata['sections'];
+        $sectionslabel = $this->_customdata['sectionslabel'];
+
 
         $mform->addElement('hidden', 'courseid');
         $mform->setType('courseid', PARAM_INT);
+
+        if($sections) {
+            $mform->addElement('select', 'section', $sectionslabel, $sections);
+        }else{
+            $mform->addElement('hidden', 'section');
+            $mform->setType('section', PARAM_INT);
+            $mform->setDefault('section', 0);
+        }
 
         $mform->addElement('questioncategory', 'category', get_string('use_category', 'block_edmodo'),array('contexts' => $contexts, 'top' => true));
         $mform->setDefault('category', $defaultcategory);

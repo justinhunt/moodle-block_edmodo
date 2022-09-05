@@ -49,6 +49,7 @@ $action = optional_param('action','', PARAM_TEXT);
 $courseid = optional_param('courseid',0, PARAM_INT);
 $confirm = optional_param('confirm',0, PARAM_INT);
 $categoryid = optional_param('categoryid',0, PARAM_INT);
+$sectionnumber = optional_param('sectionnumber',0, PARAM_INT);
 
 if( $courseid==0){
     $course = get_course($COURSE->id);
@@ -69,6 +70,8 @@ $url = new moodle_url('/blocks/edmodo/create_quiz.php', array('courseid'=>$cours
 $PAGE->set_url($url);
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagelayout('course');
+//get our renderer
+$renderer = $PAGE->get_renderer('block_edmodo');
 
 if(!$blockconfig->enablecreatequiz){
     echo $renderer->header();
@@ -77,11 +80,24 @@ if(!$blockconfig->enablecreatequiz){
     die;
 }
 
-//get edmodo search form
-
+//get course create form custom data fields (default category, context and sections)
 $defaultcategory = $DB->get_field('course_categories','id',array('name'=>'edmodoquestions'));
 $contexts =[$context];
 
+$sectionslabel = '';
+$usesections = course_format_uses_sections($course->format);
+$modinfo = get_fast_modinfo($course);
+if ($usesections) {
+    $sectionslabel = get_string('sectionname', 'format_'.$course->format);
+    $rawsections = $modinfo->get_section_info_all();
+    $sections=[];
+    foreach($rawsections as $rawsection){
+        $sections[$rawsection->section] = get_section_name($course,$rawsection);
+    }
+}else{
+    $sections = false;
+    $sectionslabel = '';
+}
 
 
 //if this is a confirmation of a form submission ..
@@ -90,16 +106,15 @@ if ($confirm and confirm_sesskey()) {
     //$results = $bqh->create_quiz_from_qbank_category($categoryid,$courseid,1);
 
     //the quiz and all the sub quizzes too
-    $results = $bqh->create_quizzes_from_qbank_category($categoryid,$courseid,1);
+    $results = $bqh->create_quizzes_from_qbank_category($categoryid,$courseid,$sectionnumber);
     redirect($url,get_string('cats_processed', 'block_edmodo',$results));
 }
 
-//get our renderer
-$renderer = $PAGE->get_renderer('block_edmodo');
+
 //echo footer
 echo $renderer->header();
 
-$create_quiz_form = new edmodo_create_quiz_form(null,array('defaultcategory'=>$defaultcategory,'contexts'=>$contexts));
+$create_quiz_form = new edmodo_create_quiz_form(null,array('defaultcategory'=>$defaultcategory,'contexts'=>$contexts,'sections'=>$sections,'sectionslabel'=>$sectionslabel));
 $formdata = $create_quiz_form->get_data();
 if ($formdata) {
 
@@ -108,18 +123,13 @@ if ($formdata) {
     $PAGE->set_title($strheading);
     $PAGE->set_heading($SITE->fullname);
     echo $renderer->heading($strheading);
-    $yesurl = new moodle_url('/blocks/edmodo/create_quiz.php', array('courseid'=>$courseid,'categoryid'=>$formdata->category, 'confirm' => 1, 'sesskey' => sesskey()));
+    $yesurl = new moodle_url('/blocks/edmodo/create_quiz.php', array('courseid'=>$courseid,'categoryid'=>$formdata->category,'sectionnumber'=>$formdata->section, 'confirm' => 1, 'sesskey' => sesskey()));
     $nourl = $url;
     $totalquizzes = $bqh->count_subcategories($formdata->category);
     $message = get_string('createquizzesconfirmmessage', 'block_edmodo',$totalquizzes);
     echo $renderer->confirm($message, $yesurl, $nourl);
     echo $renderer->footer();
     die;
-
-
-
-
-
 }
 
 
