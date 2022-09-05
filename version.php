@@ -18,9 +18,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2022082100;
+$plugin->version   = 2022090500;
 $plugin->requires  = 2010031900;      // Requires this Moodle version
-$plugin->cron      = 0;               // Period for cron to check this module (secs)
 $plugin->component = 'block_edmodo'; // To check on upgrade, that module sits in correct place
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '1.0.0 (Build 2022082100)';
+$plugin->release   = '1.0.1 (Build 2022090500)';

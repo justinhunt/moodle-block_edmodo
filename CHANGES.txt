@@ -1,2 +1,8 @@
-Version 1.1.0(Build 2018041000)
--Implemented new Moodle Privacy API
+Version 1.0.1 (Build 2022090500)
+-Added ability to auto create quizzes in bulk from question bank categories
+-Changed the way files are imported so they are loaded from the zip file itself. Previously imported files from the zip tool makers s3 links, but those expire!!!!!
+-Lots of tweaks for poorly formatted quizzes that Moodle would not import (eg multichoice questions with only one answer option)
+-Added support for Edmodo Latex format for math formulae, eg. [math]2_8[/math], by converting it to Moodle mathjax notation, eg $$ 2_8 $$
+
+Version 1.0.0(Build 2022082200)
+-First release
