@@ -583,6 +583,9 @@ class block_edmodo_helper {
         $ret .= "    <name><text>Fill in the blanks</text></name>\n";
         $ret .= "    <questiontext format=\"$qtformat\">\n";
 
+        //conflate consecutive underscores
+        $qdata->text = preg_replace('/_{2,}/', '_', $qdata->text);
+
         //make sure we have answers otherwise and then make cloze bits
         if(!empty($qdata->correct_answers) && is_countable($qdata->correct_answers)) {
             foreach ($qdata->correct_answers as $canswer) {

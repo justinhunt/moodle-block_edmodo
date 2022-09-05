@@ -3,6 +3,7 @@ Version 1.0.1 (Build 2022090500)
 -Changed the way files are imported so they are loaded from the zip file itself. Previously imported files from the zip tool makers s3 links, but those expire!!!!!
 -Lots of tweaks for poorly formatted quizzes that Moodle would not import (eg multichoice questions with only one answer option)
 -Added support for Edmodo Latex format for math formulae, eg. [math]2_8[/math], by converting it to Moodle mathjax notation, eg $$ 2_8 $$
+-Fix for fill in the blanks issue where only single (and not consecutive) underscore characters were processed as blanks
 
 Version 1.0.0(Build 2022082200)
 -First release
