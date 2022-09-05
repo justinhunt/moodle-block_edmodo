@@ -103,9 +103,12 @@ C. Import to the Moodle question bank the from exported XML file.
    8. On the next page, the Question bank displays the new category name 
 
 D. Create Moodle quiz(zes) from a question bank category
+***********************************************
 
    1. From a page displaying the Edmodo block, choose "Make quizzes from Moodle question bank"
 
    2. Choose the course section into which the quizzes should be created
 
    3. Choose the question bank category from which to make quizzes. For each category or sub-category that contains questions, a quiz will be created.
+
+   4. Press the "Create Quizzes" button
