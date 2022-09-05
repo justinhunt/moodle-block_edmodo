@@ -8,6 +8,8 @@ That can be obtained from here: https://chrome.google.com/webstore/detail/edmodo
 If you don't want to install the plugin on your own site, you can just use it from the Import Edmodo Quiz to Moodle page on the Poodll Demo Site:
 https://demo.poodll.com/course/view.php?id=67
 
+NB If your Edmodo quiz file has a lot of attached media then the processing will require a lot of memory, and you may need to adjust your Moodle site's PHP memory_limit setting. If your Edmodo quiz zip file when exported (ie before Moodle conversion) is more than 250MB, that would indicate that you have a lot of media.
+
 -------------------------------------------
 How to install on a moodle 3.x/4.x site.
 -------------------------------------------
@@ -29,7 +31,7 @@ For both methods, at the end of the installation process, the plugin configurati
 These are explained below. They may be completed at this point, or at any time, by visiting the plugin settings page.
 
 --------------------------------------------------------------
-Configuring block EdmodoQuiz for Moodle
+Configuring block Edmodo for Moodle
 --------------------------------------------------------------
 
 Plugin Settings for Edmodo Block

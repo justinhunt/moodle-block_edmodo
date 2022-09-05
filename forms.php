@@ -120,7 +120,7 @@ class edmodo_upload_form_qq extends moodleform {
         $mform->setDefault('casesensitive',BLOCK_EDMODO_SA_NOCASE);
         $sa_arraytable = $this->tablify($sa_array,1, 'sa_table',false);
 
-        $mform->addGroup($sa_arraytable, 'casesensitive_group',get_string('casesensitive','block_edmodo'), array(' '), false);
+        $mform->addGroup($sa_arraytable, 'casesensitive_group',get_string('fib_casesensitive','block_edmodo'), array(' '), false);
         $mform->addGroup($mc_arraytable, 'multichoice_group',get_string('multichoice_numbering','block_edmodo'), array(' '), false);
 
         $options = array();

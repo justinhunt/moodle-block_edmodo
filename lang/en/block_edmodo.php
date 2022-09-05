@@ -10,7 +10,7 @@ $string['shortanswer_1'] = 'Short answer (Case sensitive)';
 $string['shortanswer'] = 'Short answer';
 $string['caseinsensitive'] = 'Case insensitive';
 $string['casesensitive'] = 'Case sensitive';
-$string['multichoice_numbering'] = 'Multiple Choice Numbering';
+$string['multichoice_numbering'] = 'Multiple choice numbering';
 $string['multichoice'] = 'Multiple Choice';
 
 $string['exporttoquestions'] = 'Select edmodo set(s) and question options. Press the button to export to questions that can be imported into Moodle. <br />';
@@ -50,7 +50,7 @@ $string['quizzes_processed'] = 'Quizzes Processed: {$a}';
 $string['cats_processed'] = 'Categories Processed: {$a->created} quizzes created , {$a->errors} categories skipped.';
 $string['errors'] = "Errors";
 $string['cannotprocessdir'] = "Cannot process Edmodo dir";
-$string['casesensitive'] = "Case Sensitive";
+$string['fib_casesensitive'] = "Fill-in-blanks case sensitivity";
 $string['uploadinstructions'] = "Select the options for the questions that will be created and upload the file that you exported from Edmodo using the <a href='https://chrome.google.com/webstore/detail/edmodo-quizzes-export/ehfboobiajeoeniifjgkhpemkbndlfab'>Edmodo Quizzes Export</a> Google Chrome Extension by Bookwidgets. If you have a lot of data it can take some time.";
 $string['enableqqdirect'] = "Enable Direct Import";
 $string['enableqqdirect_desc'] = "If checked you will be able to import directly to your courses question bank without having to download and upload the xml file.";
