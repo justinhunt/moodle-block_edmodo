@@ -51,7 +51,7 @@ Using block Edmodo for Moodle
 A. Export from Edmodo Quiz Export file to Moodle Quiz XML file
 ***********************************************
 
-   1. From a page displaying the Edmodo block, choose "Export to Questions to Import File(XML)"Export Questions direct to Question Bank
+   1. From a page displaying the Edmodo block, choose "Create and download Moodle questions(XML)"
 
    2. You have a choice of 4 types of numbering for the exported multiple choice questions:
     * a., b., c. (the default numbering type)
@@ -66,20 +66,22 @@ A. Export from Edmodo Quiz Export file to Moodle Quiz XML file
     * Case sensitive. Student responses will be only be accepted as correct if the text AND case match that of the original term.
           o Example: original entry "Moodle". Accepted correct response: "Moodle".
 
-   4. Click on the "Upload file" and upload the Edmodo Quiz Export file. This is a zip file and you can only obtain it by using the Edmodo Quizzes Export Google Chrome Extension by Bookwidgets.
+   4. Upload/drag-drop the Edmodo Quiz Export file into the file area. This is a zip file and you can only obtain it by using the Edmodo Quizzes Export Google Chrome Extension by Bookwidgets.
 
-   5. The file will download immediately.
+   5. Press the "Create Moodle Questions" button.
+
+   5. The questions will be created and the file will download immediately. It may take some time if you have a lot of questions.
     NB Your browser will not leave the export page at this point.
 
 B. Export from  Edmodo Quiz Export file to Moodle Question Bank
 ***********************************************
 
- 1. From a page displaying the Edmodo block, choose "Export Questions direct to Question Bank"
+ 1. From a page displaying the Edmodo block, choose "Create and import to Moodle question bank"
 
  2. As for A) exporting to an XML file, but the final step of exporting to a file, is that the questions are automatically created in the current course's question bank.
 
 
-C. Import to the quiz questions bank from exported XML file.
+C. Import to the Moodle question bank the from exported XML file.
 ************************************
 
    1. Turn editing on
@@ -98,3 +100,10 @@ C. Import to the quiz questions bank from exported XML file.
 
    8. On the next page, the Question bank displays the new category name 
 
+D. Create Moodle quiz(zes) from a question bank category
+
+   1. From a page displaying the Edmodo block, choose "Make quizzes from Moodle question bank"
+
+   2. Choose the course section into which the quizzes should be created
+
+   3. Choose the question bank category from which to make quizzes. For each category or sub-category that contains questions, a quiz will be created.
