@@ -70,8 +70,8 @@ class block_edmodo_helper {
         }
    
     //fetch question type file content, and export
-    function export_qqfile($edmodosets, $casesensitive,$multichoice_numbering,$ddmatch){
-        $filecontent = $this->make_qqfile($edmodosets,$casesensitive,$multichoice_numbering,$ddmatch);
+    function export_qqfile($edmodosets, $casesensitive,$multichoice_numbering,$ddmatch,$fillblanksstyle){
+        $filecontent = $this->make_qqfile($edmodosets,$casesensitive,$multichoice_numbering,$ddmatch,$fillblanksstyle);
         $filename ="edmodoimportdata.xml";
         send_file($filecontent, $filename, 0, 0, true, true);  
         return;
@@ -122,7 +122,7 @@ class block_edmodo_helper {
 
 
     //if question import export, make file content
-    function make_qqfile($edmodosets,$casesensitive,$multichoice_numbering, $ddmatch)
+    function make_qqfile($edmodosets,$casesensitive,$multichoice_numbering, $ddmatch, $fillblanksstyle)
     {
 
         // build XML file - based on moodle/question/xml/format.php
@@ -188,7 +188,11 @@ class block_edmodo_helper {
 
                         case 'cloze':
                             $counter++;
-                            $expout .= $this->data_to_cloze_question($edmododata,$casesensitive, $counter);
+                            if($fillblanksstyle==1) {
+                                $expout .= $this->data_to_ddwtos_question($edmododata,$casesensitive, $counter);
+                            }else{
+                                $expout .= $this->data_to_cloze_question($edmododata, $casesensitive, $counter);
+                            }
                             break;
 
                     }
@@ -328,11 +332,11 @@ class block_edmodo_helper {
     }
    
      //export direct to qbank
-   function export_qq_to_qbank($edmodosets,$casesensitive,$multichoice_numbering,$ddmatch,$category, $pageurl){
+   function export_qq_to_qbank($edmodosets,$casesensitive,$multichoice_numbering,$ddmatch,$fillblanksstyle,$category, $pageurl){
        global $CFG, $DB, $COURSE;
        $success=true;
        //get export file
-       $filecontent = $this->make_qqfile($edmodosets,$casesensitive,$multichoice_numbering, $ddmatch);
+       $filecontent = $this->make_qqfile($edmodosets,$casesensitive,$multichoice_numbering, $ddmatch,$fillblanksstyle);
         $categorycontext = context::instance_by_id($category->contextid);
         $category->context = $categorycontext;
         $contexts = new question_edit_contexts($categorycontext);
@@ -625,6 +629,63 @@ class block_edmodo_helper {
         }
         $ret .= "    </questiontext>\n";
 
+
+        // close the question tag
+        $ret .= "</question>\n";
+        return $ret;
+    }//end of function
+
+    function data_to_ddwtos_question($qdata, $casesensitive, $counter){
+
+        $ret = "";
+        //moodle wont import a cloze with no answers so we simply skip
+        if(empty($qdata->correct_answers) || !is_countable($qdata->correct_answers)) {
+            return $ret;
+        }
+
+        $files = $this->parsefiles($qdata);
+
+        $ret .= "\n\n<!-- question: $counter  -->\n";
+        $qtformat = "html";
+        $ret .= "  <question type=\"ddwtos\">\n";
+        $ret .= "    <name><text>Drag into the blanks</text></name>\n";
+        $ret .= "    <questiontext format=\"$qtformat\">\n";
+
+        //conflate consecutive underscores
+        $qdata->text = preg_replace('/_{2,}/', '_', $qdata->text);
+
+        //make sure we have answers otherwise and then make cloze bits
+        $currentblank=0;
+        $dragboxes=[];
+        if(!empty($qdata->correct_answers) && is_countable($qdata->correct_answers)) {
+            foreach ($qdata->correct_answers as $canswer) {
+                //question text
+                $currentblank++;
+                $placeholder = "&nbsp;[[$currentblank]]&nbsp;";
+                $pos = strpos($qdata->text, '_');
+                if ($pos !== false) {
+                    $qdata->text = substr_replace($qdata->text, $placeholder, $pos, 1);
+                }
+                //dragbox
+                $dragboxes[]="<dragbox>" . $this->writetext($canswer). "<group>1</group></dragbox>";
+            }
+        }
+        if(count( $files)>0){
+            $links='';
+            $filetags='';
+            foreach($files as $filesdata){
+                $links .= $filesdata['text'];
+                $filetags .= $filesdata['file'];
+            }
+            $ret .= $this->writetext( $qdata->text . $links );
+            $ret .= $filetags;
+        }else{
+            $ret .= $this->writetext( $qdata->text );
+        }
+        $ret .= "    </questiontext>\n";
+        $ret .= "<shuffleanswers>1</shuffleanswers>";
+        $ret .= "<shownumcorrect/>";
+        $ret .= implode("\n" , $dragboxes);
 
         // close the question tag
         $ret .= "</question>\n";
