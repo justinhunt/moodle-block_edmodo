@@ -180,6 +180,12 @@ class edmodo_create_quiz_form extends moodleform {
             $mform->setDefault('section', 0);
         }
 
+        //questions per page
+        $qoptions=array(1=>1,2=>2,3=>3,4=>4,5=>5,6=>6,7=>7,8=>8,9=>9,10=>10);
+        $mform->addElement('select', 'questionsperpage', get_string('questionsperpage','block_edmodo'), $qoptions);
+        $mform->setDefault('questionsperpage', 1);
+
+        //question category
         $mform->addElement('questioncategory', 'category', get_string('use_category', 'block_edmodo'),array('contexts' => $contexts, 'top' => true));
         $mform->setDefault('category', $defaultcategory);
 

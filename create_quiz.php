@@ -50,6 +50,7 @@ $courseid = optional_param('courseid',0, PARAM_INT);
 $confirm = optional_param('confirm',0, PARAM_INT);
 $categoryid = optional_param('categoryid',0, PARAM_INT);
 $sectionnumber = optional_param('sectionnumber',0, PARAM_INT);
+$questionsperpage = optional_param('questionsperpage',1, PARAM_INT);
 
 if( $courseid==0){
     $course = get_course($COURSE->id);
@@ -106,7 +107,7 @@ if ($confirm and confirm_sesskey()) {
     //$results = $bqh->create_quiz_from_qbank_category($categoryid,$courseid,1);
 
     //the quiz and all the sub quizzes too
-    $results = $bqh->create_quizzes_from_qbank_category($categoryid,$courseid,$sectionnumber);
+    $results = $bqh->create_quizzes_from_qbank_category($categoryid,$courseid,$sectionnumber,$questionsperpage);
     redirect($url,get_string('cats_processed', 'block_edmodo',$results));
 }
 
@@ -123,7 +124,8 @@ if ($formdata) {
     $PAGE->set_title($strheading);
     $PAGE->set_heading($SITE->fullname);
     echo $renderer->heading($strheading);
-    $yesurl = new moodle_url('/blocks/edmodo/create_quiz.php', array('courseid'=>$courseid,'categoryid'=>$formdata->category,'sectionnumber'=>$formdata->section, 'confirm' => 1, 'sesskey' => sesskey()));
+    $yesurl = new moodle_url('/blocks/edmodo/create_quiz.php', array('courseid'=>$courseid,'categoryid'=>$formdata->category,
+        'sectionnumber'=>$formdata->section,'questionsperpage'=>$formdata->questionsperpage, 'confirm' => 1, 'sesskey' => sesskey()));
     $nourl = $url;
     $totalquizzes = $bqh->count_subcategories($formdata->category);
     $message = get_string('createquizzesconfirmmessage', 'block_edmodo',$totalquizzes);

@@ -209,12 +209,12 @@ class block_edmodo_helper {
        return $content;
     }
 
-    function create_quizzes_from_qbank_category($categoryid, $courseid,$sectionNum){
+    function create_quizzes_from_qbank_category($categoryid, $courseid,$sectionNum,$questionsperpage){
         $results = ['created'=>0,'errors'=>0];
         $cats = question_categorylist($categoryid);
         if($cats){
             foreach($cats as $cat_id){
-               $result =  $this->create_quiz_from_qbank_category($cat_id, $courseid,$sectionNum);
+               $result =  $this->create_quiz_from_qbank_category($cat_id, $courseid,$sectionNum,$questionsperpage);
                $results['created'] += $result['created'];
                $results['errors'] += $result['errors'];
             }
@@ -222,7 +222,7 @@ class block_edmodo_helper {
         return $results;
     }
 
-    function create_quiz_from_qbank_category($categoryid, $courseid,$sectionNum){
+    function create_quiz_from_qbank_category($categoryid, $courseid,$sectionNum,$questionsperpage=1){
         global $CFG, $DB;
         $results = ['created'=>0,'errors'=>0];
 
@@ -280,7 +280,7 @@ class block_edmodo_helper {
         $myQuiz->grademethod = 1;
         $myQuiz->questiondecimalpoints = 2;
         $myQuiz->visible = 1;
-        $myQuiz->questionsperpage = 1;
+        $myQuiz->questionsperpage = $questionsperpage;
         $myQuiz->introeditor = array('text' => $cat->info,'format' => 1,'itemid'=>0);
 
         //all of the review options
@@ -313,8 +313,8 @@ class block_edmodo_helper {
         //actually make the quiz using the function from course/lib.php
         $module = create_module($myQuiz);
 
-        //add questions
-        $addonpage = 1;
+        //add questions to which page (by default it is the end )
+        $addonpage = 0;
         require_once($CFG->dirroot . '/mod/quiz/locallib.php');
         foreach ($qs as $q) {
             quiz_require_question_use($q->id);
