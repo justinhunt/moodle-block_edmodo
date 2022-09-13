@@ -320,6 +320,12 @@ class block_edmodo_helper {
         //add questions to which page (by default it is the end )
         $addonpage = 0;
         require_once($CFG->dirroot . '/mod/quiz/locallib.php');
+        //sort by question name
+        usort($qs, function($a, $b)
+        {
+            return strcmp($a->name, $b->name);
+        });
+        //add all the qs
         foreach ($qs as $q) {
             quiz_require_question_use($q->id);
             quiz_add_quiz_question($q->id, $module, $addonpage);
@@ -441,6 +447,8 @@ class block_edmodo_helper {
             }
 
             $files = $this->parsefiles($qdata);
+           $id_number =$qdata->id;
+           $name = ($qdata->position + 1)  . ': Matching';
 
             $ret .= "\n\n<!-- question: $counter  -->\n";            
             $qtformat = "html";
@@ -449,8 +457,8 @@ class block_edmodo_helper {
             }else{
                 $ret .= "  <question type=\"matching\">\n";
             }
-
-            $ret .= "    <name><text>Matching</text></name>\n";
+           $ret .= "    <name><text>$name</text></name>\n";
+           $ret .= "    <idnumber>$id_number</idnumber>\n";
             $ret .= "    <questiontext format=\"$qtformat\">\n";
            if(count( $files)>0){
                $links='';
@@ -474,7 +482,7 @@ class block_edmodo_helper {
                     return '';
                 }
 
-                //We dont yet do images in the matching question, but we ought to support ddmatch or something like it
+                //Edmodo dont yet do images in the matching question
                 $theimage =false; // $entry->image;
 
                  $ret .= "<subquestion format=\"html\">\n ";
@@ -512,13 +520,16 @@ class block_edmodo_helper {
 
         $ret = "";
         $files = $this->parsefiles($qdata);
+        $id_number =$qdata->id;
+        $name = ($qdata->position + 1)  . ': Short Answer';
 
         $currentterm = trusttext_strip($qdata->choices[$qdata->correct_answer]);
 
         $ret .= "\n\n<!-- question: $counter  -->\n";
         $qtformat = "html";
         $ret .= "  <question type=\"$questiontype\">\n";
-        $ret .= "    <name><text>short answer</text></name>\n";
+        $ret .= "    <name><text>$name</text></name>\n";
+        $ret .= "    <idnumber>$id_number</idnumber>\n";
         $ret .= "    <questiontext format=\"$qtformat\">\n";
         if(count( $files)>0){
             $links='';
@@ -552,11 +563,14 @@ class block_edmodo_helper {
 
         $ret = "";
         $files = $this->parsefiles($qdata);
+        $id_number =$qdata->id;
+        $name = ($qdata->position + 1)  . ': Short Answer (essay)';
 
         $ret .= "\n\n<!-- question: $counter  -->\n";
         $qtformat = "html";
         $ret .= "  <question type=\"essay\">\n";
-        $ret .= "    <name><text>Short Answer (essay)</text></name>\n";
+        $ret .= "    <name><text>$name</text></name>\n";
+        $ret .= "    <idnumber>$id_number</idnumber>\n";
         $ret .= "    <questiontext format=\"$qtformat\">\n";
         if(count( $files)>0){
             $links='';
@@ -572,9 +586,17 @@ class block_edmodo_helper {
         }
 
         $ret .= "    </questiontext>\n";
-        $ret .= "    <answer fraction=\"0\">\n";
-        $ret .= "      <text></text>\n";
-        $ret .= "    </answer>\n";
+        $ret .= "    <responseformat>plain</responseformat>\n";
+        $ret .= "    <responserequired>1</responserequired>\n";
+        $ret .= "    <responsefieldlines>2</responsefieldlines>\n";
+        $ret .= "    <minwordlimit/>\n";
+        $ret .= "    <maxwordlimit/>\n";
+        $ret .= "    <attachments>0</attachments>\n";
+        $ret .= "    <attachmentsrequired>0</attachmentsrequired>\n";
+        $ret .= "    <maxbytes>0</maxbytes>\n";
+     //   $ret .= "    <answer fraction=\"0\">\n";
+      //  $ret .= "      <text></text>\n";
+      //  $ret .= "    </answer>\n";
 
 
         // close the question tag
@@ -591,27 +613,47 @@ class block_edmodo_helper {
         }
 
         $files = $this->parsefiles($qdata);
+        $id_number =$qdata->id;
+        $name = ($qdata->position + 1)  . ': Fill in the blanks';
 
         $ret .= "\n\n<!-- question: $counter  -->\n";
         $qtformat = "html";
         $ret .= "  <question type=\"cloze\">\n";
-        $ret .= "    <name><text>Fill in the blanks</text></name>\n";
+        $ret .= "    <name><text>$name</text></name>\n";
         $ret .= "    <questiontext format=\"$qtformat\">\n";
 
-        //conflate consecutive underscores
-        $qdata->text = preg_replace('/_{2,}/', '_', $qdata->text);
+        //conflate consecutive underscores and pad them with a space on either side
+        //the spaces should distinguish from cloze notation and things inside [math] tags eg [math] -37_{10}   [/math]
+        $qdata->text = preg_replace('/_{2,}/', ' _ ', $qdata->text);
 
         //make sure we have answers otherwise and then make cloze bits
         if(!empty($qdata->correct_answers) && is_countable($qdata->correct_answers)) {
-            foreach ($qdata->correct_answers as $canswer) {
-                if($casesensitive) {
-                    $cloze_answer = "&nbsp;{1:SHORTANSWER_C:=$canswer}&nbsp;";
-                }else{
-                    $cloze_answer = "&nbsp;{1:SHORTANSWER:=$canswer}&nbsp;";
+            $looped=0;
+            $answered=0;
+            $prevpos = -1;
+            $totalcorrectanswers = count($qdata->correct_answers);
+
+            while($answered < $totalcorrectanswers){
+                $looped++;
+                //lets add a firebreak if we have more than a hundred loops,
+                if($looped>=100){
+                    break;
                 }
-                $pos = strpos($qdata->text, '_');
+
+                $pos = strpos($qdata->text, ' _');
+                //if this pos and the last pos are the same then we appear to be stuck, so break;
+                if($pos==$prevpos){break;}
+                $prevpos = $pos;
+
                 if ($pos !== false) {
-                    $qdata->text = substr_replace($qdata->text, $cloze_answer, $pos, 1);
+                    $canswer=array_shift($qdata->correct_answers);
+                    if($casesensitive) {
+                        $cloze_answer = "&nbsp;{1:SHORTANSWER_C:=$canswer}";
+                    }else{
+                        $cloze_answer = "&nbsp;{1:SHORTANSWER:=$canswer}";
+                    }
+                    $qdata->text = substr_replace($qdata->text, $cloze_answer, $pos, 2);
+                    $answered++;
                 }
             }
         }
@@ -628,8 +670,7 @@ class block_edmodo_helper {
             $ret .= $this->writetext( $qdata->text );
         }
         $ret .= "    </questiontext>\n";
-
-
+        $ret .= "    <idnumber>$id_number</idnumber>\n";
         // close the question tag
         $ret .= "</question>\n";
         return $ret;
@@ -644,30 +685,53 @@ class block_edmodo_helper {
         }
 
         $files = $this->parsefiles($qdata);
+        $id_number =$qdata->id;
+        $name = ($qdata->position + 1)  . ': Drag into the blanks';
 
         $ret .= "\n\n<!-- question: $counter  -->\n";
         $qtformat = "html";
         $ret .= "  <question type=\"ddwtos\">\n";
-        $ret .= "    <name><text>Drag into the blanks</text></name>\n";
+        $ret .= "    <name><text>$name</text></name>\n";
+        $ret .= "    <idnumber>$id_number</idnumber>\n";
         $ret .= "    <questiontext format=\"$qtformat\">\n";
 
         //conflate consecutive underscores
-        $qdata->text = preg_replace('/_{2,}/', '_', $qdata->text);
+        $qdata->text = preg_replace('/_{2,}/', ' _ ', $qdata->text);
 
         //make sure we have answers otherwise and then make cloze bits
         $currentblank=0;
         $dragboxes=[];
         if(!empty($qdata->correct_answers) && is_countable($qdata->correct_answers)) {
-            foreach ($qdata->correct_answers as $canswer) {
+
+            $looped=0;
+            $answered=0;
+            $prevpos = -1;
+            $totalcorrectanswers = count($qdata->correct_answers);
+
+            while($answered < $totalcorrectanswers){
+
+                $looped++;
+                //lets add a firebreak if we have more than a hundred loops,
+                if($looped>=100){
+                    break;
+                }
+
                 //question text
                 $currentblank++;
                 $placeholder = "&nbsp;[[$currentblank]]&nbsp;";
-                $pos = strpos($qdata->text, '_');
+
+                $pos = strpos($qdata->text, ' _');
+                //if this pos and the last pos are the same then we appear to be stuck, so break;
+                if($pos==$prevpos){break;}
+                $prevpos = $pos;
+
                 if ($pos !== false) {
-                    $qdata->text = substr_replace($qdata->text, $placeholder, $pos, 1);
+                    $canswer=array_shift($qdata->correct_answers);
+                    $qdata->text = substr_replace($qdata->text, $placeholder, $pos, 2);
+                    //dragbox
+                    $dragboxes[]="<dragbox>" . $this->writetext($canswer). "<group>1</group></dragbox>";
                 }
-                //dragbox
-                $dragboxes[]="<dragbox>" . $this->writetext($canswer). "<group>1</group></dragbox>";
+
             }
         }
         if(count( $files)>0){
@@ -702,13 +766,15 @@ class block_edmodo_helper {
             if(empty($qdata->choices) || !is_countable($qdata->choices) || count($qdata->choices) < 2) {
                 return $ret;
             }
-
+            $id_number =$qdata->id;
+            $name = ($qdata->position + 1)  . ': Multichoice';
             $files = $this->parsefiles($qdata);
 
         	$ret .= "\n\n<!-- question: $counter  -->\n";
             $qtformat = "html";
             $ret .= "  <question type=\"multichoice\">\n";
-            $ret .= "    <name><text>Multi Choice</text></name>\n";
+            $ret .= "    <name><text>$name</text></name>\n";
+            $ret .= "    <idnumber>$id_number</idnumber>\n";
             $ret .= "    <questiontext format=\"$qtformat\">\n";
 
             if(count( $files)>0){
@@ -803,11 +869,14 @@ class block_edmodo_helper {
 
         $ret = "";
         $files = $this->parsefiles($qdata);
+        $id_number =$qdata->id;
+        $name = ($qdata->position + 1)  . ': True/False';
 
         $ret .= "\n\n<!-- question: $counter  -->\n";
         $qtformat = "html";
         $ret .= "  <question type=\"truefalse\">\n";
-        $ret .= "    <name><text>True/False</text></name>\n";
+        $ret .= "    <name><text>$name</text></name>\n";
+        $ret .= "    <idnumber>$id_number</idnumber>\n";
         $ret .= "    <questiontext format=\"$qtformat\">\n";
         if(count($files)>0){
             $links='';
