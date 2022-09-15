@@ -208,7 +208,18 @@ class block_edmodo_helper {
                        "</quiz>";
 
         // make the xml look nice
-        $content = $this->xmltidy( $content );	
+        $content = $this->xmltidy( $content );
+
+
+        // Trigger module viewed event.
+        $event = \block_edmodo\event\export_complete::create(array(
+            'context' => \context_system::instance(),
+            'other' => array(
+                'questioncount' => $counter
+            )
+        ));
+        $event->trigger();
+
         //return the content
        return $content;
     }

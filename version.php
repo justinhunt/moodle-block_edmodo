@@ -18,8 +18,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2022090500;
+$plugin->version   = 2022091500;
 $plugin->requires  = 2010031900;      // Requires this Moodle version
 $plugin->component = 'block_edmodo'; // To check on upgrade, that module sits in correct place
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '1.0.1 (Build 2022090500)';
+$plugin->release   = '1.0.2 (Build 2022091500)';

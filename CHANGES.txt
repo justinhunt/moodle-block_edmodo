@@ -1,3 +1,6 @@
+Version 1.0.2 (Build 2022091500)
+- Added an event on export and lots of tweaks
+
 Version 1.0.1 (Build 2022090500)
 -Added ability to auto create quizzes in bulk from question bank categories
 -Changed the way files are imported so they are loaded from the zip file itself. Previously imported files from the zip tool makers s3 links, but those expire!!!!!

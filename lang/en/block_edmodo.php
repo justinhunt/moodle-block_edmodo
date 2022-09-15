@@ -68,3 +68,4 @@ $string['questionsperpage']='Questions per quiz page';
 $string['fillblanksstyle']='Fill-in-blanks style';
 $string['typeintheblanks']='Type into the blanks';
 $string['dragdropintheblanks']='Drag and drop into the blanks';
+$string['eventexportcomplete'] = 'Edmodo Quiz Export Complete';
