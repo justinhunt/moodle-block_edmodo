@@ -53,7 +53,11 @@ class export_complete extends \core\event\base {
      * @return string
      */
     public function get_description() {
-        return "An export was completed with: ". s($this->other['questioncount']) . " questions by userid:" . $this->userid;
+        if(isset($this->other)) {
+            return "An export was completed with: " . s($this->other['questioncount']) . " questions by userid:" . $this->userid;
+        } else {
+            return "An export was completed by userid:" . $this->userid;
+        }
     }
 
     /**
